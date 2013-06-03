@@ -40,6 +40,13 @@ var PUser = mongoose.model('PowerUsers', userSchema);
 var app = express();
 app.use(express.logger());
 
+// GET '/'
+app.get('/', function(request, response){
+	response.send('options are: ' + uristring + '/AddPerson or ' + uristring + '/GetPeople' );
+});
+
+
+// GET '/GetPeople'
 app.get('/GetPeople', function(request, response) {
 
 	// make a query to find some users
@@ -57,6 +64,7 @@ app.get('/GetPeople', function(request, response) {
 	});
 });
 
+// GET '/AddPerson'   <--- could be post
 app.get('/AddPerson', function(request, response){
 	// create a new user
 	var johndoe = new PUser ({
@@ -66,6 +74,9 @@ app.get('/AddPerson', function(request, response){
 	
 	// save them
 	johndoe.save(function (err) {if (err) console.log('Error on save!')});
+	
+	// return response
+	response.send('Successfully added a new person!' );
 });
 
 
