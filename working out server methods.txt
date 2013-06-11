@@ -1,0 +1,423 @@
+Login screen
+//=======================================================================================================================================================================
+
+REQUEST - POST  /session
+{
+	"email": "ben@coolstuff.com",
+	"password": "123"
+}
+
+RESPONSE - 200 OK
+{
+	"session": "sdfr234"
+}
+
+RESPONSE - 401 unauthorised
+
+
+
+Register screen
+//=======================================================================================================================================================================
+
+REQUEST - POST /users
+{
+	"firstName": "John",
+	"lastName": "Smith",
+	"location":{
+		"lat": 123.4,
+		"lon": 123.3
+	},
+	"address":"blarg",
+	"city": "wgt",
+	"phone": "12345",
+	"email": "sdfd@dfdsf.com",
+	"password": "hello",
+	"picture": {}
+} 
+
+RESPONSE - 201 Created
+Location: /users/{userId}
+{
+	"session":"123der"
+	"firstName": "John",
+	"lastName": "Smith",
+	"location":{
+		"lat": 123.4,
+		"lon": 123.3
+	},
+	"address":"blarg",
+	"city": "wgt",
+	"phone": "12345",
+	"email": "sdfd@dfdsf.com",
+	"password": "hello",
+	"picture": {}
+} 
+
+RESPONSE - 403 Forbidden - "an account already exists for that user"
+
+
+
+Map screen 
+//=======================================================================================================================================================================
+
+REQUEST - GET /resources?radius=500  <--- used by map screen
+REQUEST - GET /resources?ownerId=234  <--- used by profile screen
+{
+	"session": "12345",
+	"location":{
+		"lat": 123.4,
+		"lon": 123.3
+	},
+	"filters": ["spade", "compost"]
+}
+
+RESPONSE - 200 OK
+{
+	"resources":
+	[
+		{
+			"resourceId": 123,
+			"resourceType":"tools"
+			"location":{
+				"lat": 123.4,
+			 	"lon": 123.3
+			}	 
+		},
+		{	
+			"iconId": 124,
+			"resourceType":"land"
+			"location":{
+				 "lat": 123.4,
+				 "lon": 123.3
+		 	},
+		}
+	]
+}
+
+
+
+ResourceList screen
+//=======================================================================================================================================================================
+
+REQUEST - GET /resources/{resourceId}
+{
+	"session": "sdfr234"
+}
+
+RESPONSE - 200 OK
+{
+	"resource":{
+		"resourceId": 123,
+		"resourceType":"tools"
+		"location":{
+			"lat": 123.4,
+		 	"lon": 123.3
+		}
+		"title": "Cool Spade",
+	 	"description": "sdfdsf",
+	 	"owner": {"userId": 123, "firstName": "isabel", "lastName":"Broome-Nicholson"},
+	 	"points": 2,
+	 	"wantedList": "cool text discription with puppies",
+	 	"image": {}
+	}
+}
+
+RESPONSE - 404 not found  "no resource with that ID exists"
+
+RESPONSE - 401 unauthorised
+
+
+
+Add a resource
+//=======================================================================================================================================================================
+
+REQUEST - POST /users/{userId}/resources
+{
+	"session": "sdfr234",
+	"resource":{
+		"resourceId": 123,
+		"resourceType":"tools"
+		"location":{
+			"lat": 123.4,
+		 	"lon": 123.3
+		}
+		"title": "Cool Spade",
+	 	"description": "sdfdsf",
+	 	"owner": {"userId": 123, "firstName": "isabel", "lastName":"Broome-Nicholson"},
+	 	"points": 2,
+	 	"wantedList": "cool text discription with puppies",
+	 	"image": {}
+	}
+}
+
+RESPONSE - 201 Created  "Resource created"
+Location: http://www.ourwebsite.com/resources/{resourceId}
+{
+	"resourceId": 123,
+	"resourceType":"tools"
+	"location":{
+		"lat": 123.4,
+	 	"lon": 123.3
+	}
+	"title": "Cool Spade",
+ 	"description": "sdfdsf",
+ 	"owner": {"userId": 123, "firstName": "isabel", "lastName":"Broome-Nicholson"},
+ 	"points": 2,
+ 	"wantedList": "cool text discription with puppies",
+ 	"image": {}
+}
+
+RESPONSE - 404 not found  "no resource with that ID exists"
+
+RESPONSE - 401 unauthorised  "Session invalid/expired"
+
+
+
+Create a new trade
+//=======================================================================================================================================================================
+
+REQUEST - POST /users/{userId}/trades
+{
+	"session":""123d3er,
+	"resourceId":123,
+	"message":"gimme",
+	"forPoints":true
+}
+
+RESPONSE - 201 Created
+Location: http://www.ourwebsite.com/users/23/trades/12
+{
+	"tradeId":12,
+	"resourceId":123,
+	"ownerId":23,
+	"borrowerId":34,
+	"messages":[
+		{
+			"tradeId":12,
+			"messageId":567,
+			"date":"1997-07-16T19:20:30+01:00",
+			"from":34,
+			"to":23,
+			"text":"gimme"
+		}
+	]
+	"forPoints":true,
+	"status":1
+}
+
+RESPONSE - 404 not found  "No trade with that ID exists"
+
+RESPONSE - 401 unauthorised  "Session invalid/expired"
+
+RESPONSE - 403 Forbidden - "You are already in a trade for that item"
+
+
+
+Get an existing trade
+//=======================================================================================================================================================================
+
+REQUEST - GET /users/{userId}/trades/{tradeId}?lastMessageId={messageId}  <--- last message parameters optional
+{
+	"session": "sdfr234"
+}
+
+RESPONSE - 200 OK
+{
+	"tradeId":12,
+	"resourceId":123,
+	"ownerId":23,
+	"borrowerId":34,
+	"messages":[     <----------------------------Could just be the latest ones
+		{
+			"tradeId":12,
+			"messageId":567,
+			"date":"1997-07-16T19:20:30+01:00",
+			"from":34,
+			"to":23,
+			"text":"gimme"
+		}
+	]
+	"forPoints":true,
+	"status":1,
+	"availableActions":["cancel", "add message"]
+}
+
+RESPONSE - 404 not found  "No trade with that ID exists"
+
+RESPONSE - 401 unauthorised  "Session invalid/expired"
+
+
+
+Get a list of all the user's trades
+//=======================================================================================================================================================================
+
+REQUEST - GET /users/{userId}/trades
+{
+	"session": "sdfr234"
+}
+
+RESPONSE - 200 OK
+{
+	trades:
+	[
+		{
+			"tradeId":12,
+			"resourceId":123,
+			"ownerId":23,
+			"borrowerId":34,
+			"messages":[     <----------------------------Could just be the latest ones
+				{
+					"tradeId":12,
+					"messageId":567,
+					"date":"1997-07-16T19:20:30+01:00",
+					"from":34,
+					"to":23,
+					"text":"gimme"
+				}
+			]
+			"forPoints":true,
+			"status":1
+		},
+		{
+			"tradeId":12,
+			"resourceId":123,
+			"ownerId":23,
+			"borrowerId":34,
+			"messages":        <----------------------------Could just be the latest ones
+			[     
+				{
+					"tradeId":12,
+					"messageId":567,
+					"date":"1997-07-16T19:20:30+01:00",
+					"from":34,
+					"to":23,
+					"text":"gimme"
+				}
+			]
+			"forPoints":true,
+			"status":3
+		}
+	]	
+}
+
+RESPONSE - 401 unauthorised  "Session invalid/expired" / "You are not authorised to access that information"
+
+
+
+Perform an action on a trade
+//=======================================================================================================================================================================
+
+REQUEST - POST /users/{userId}/trades/{tradeId}/actions
+{
+	"session":"ser234",
+	"action":"cancel"
+}
+
+RESPONSE - 200 OK
+{
+	"status":4
+}
+
+
+
+Get available actions for a trade
+//=======================================================================================================================================================================
+
+REQUEST - GET /users/{userId}/trades/{tradeId}/actions
+{
+	"session":"ser234"
+}
+
+RESPONSE - 200 OK
+{
+	"availableActions":["cancel", "add message"]
+}
+
+
+
+Post a message on a trade
+//=======================================================================================================================================================================
+
+REQUEST - POST /users/{userId}/trades/{tradeId}
+{
+	"session":"ser234",
+	"text":"Yeah that's cool dude. See you then."
+}
+
+RESPONSE - 200 OK
+{
+	"tradeId":12,
+	"messageId":567,
+	"date":"1997-07-16T19:20:30+01:00",
+	"from":34,
+	"to":23,
+	"text":"gimme"
+}
+
+
+
+Get a profile
+//=======================================================================================================================================================================
+
+REQUEST - GET /users/{userId}/profile
+{
+	"session": "sdfr234"
+}
+
+RESPONSE - 200 OK
+{
+	"firstName":"Thomas",
+	"lastName":"Norman",
+	"totalRating":4.67,
+	"points":21,
+	"lookingFor":"Gardening tools (spades, pots), wood, land to plant.",
+																						<------ deciding not to put in available items for now - images could be expensive
+	"recommendations":[
+		{
+			"recommendationId":234,
+			"tradeId":12,
+			"date":"1997-07-16T19:20:30+01:00",
+			"reviewer":{"userId": 123, "firstName": "isabel", "lastName":"Broome-Nicholson"},
+			"reviewee":234,
+			"rating":4,
+			"message":"Yeah they were really awesome.  Two enthusiastic thumbs up."
+		},
+		{
+			"recommendationId":237,
+			"tradeId":14,
+			"date":"1997-07-16T19:20:30+01:00",
+			"reviewer":{"userId": 123, "firstName": "Stan", "lastName":"Button"},
+			"reviewee":234,
+			"rating":5,
+			"message":"Three enthusiastic thumbs up."
+		},
+	]
+}
+
+
+
+Get resources offered by a person
+//=======================================================================================================================================================================
+
+REQUEST - GET /users/{userId}/resources  <--- see line 69ish for details ^
+
+
+
+Edit a profile
+//=======================================================================================================================================================================
+
+REQUEST - PUT /users/{userId}/profile
+{
+	"session":"se23esdf"
+	"address":"blarg",  <--- any fields the user wants to update
+	"password":"234"    <--- their password to revalidate
+}
+
+RESPONSE - 204 No content
+
+RESPONSE - 404 not found  "No trade with that ID exists"
+
+RESPONSE - 401 unauthorised  "Session invalid/expired"
+
+RESPONSE - something to do with trying to edit fields you can't do
+
