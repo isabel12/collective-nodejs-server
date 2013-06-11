@@ -57,17 +57,12 @@ RESPONSE - 403 Forbidden - "an account already exists for that user"
 
 
 
-Map screen 
+Get all resources in the area
 //=======================================================================================================================================================================
 
-REQUEST - GET /resources?radius=500  <--- used by map screen
-REQUEST - GET /resources?ownerId=234  <--- used by profile screen
+REQUEST - GET /resources?lat=123.4&lon=234.56&radius=500  <--- used by map screen
 {
-	"session": "12345",
-	"location":{
-		"lat": 123.4,
-		"lon": 123.3
-	},
+	"session":"12serr",
 	"filters": ["spade", "compost"]
 }
 
@@ -96,7 +91,7 @@ RESPONSE - 200 OK
 
 
 
-ResourceList screen
+Get an individual resource
 //=======================================================================================================================================================================
 
 REQUEST - GET /resources/{resourceId}
@@ -170,6 +165,26 @@ Location: http://www.ourwebsite.com/resources/{resourceId}
 RESPONSE - 404 not found  "no resource with that ID exists"
 
 RESPONSE - 401 unauthorised  "Session invalid/expired"
+
+
+
+Edit a resource
+//=======================================================================================================================================================================
+
+REQUEST - PUT /users/{userId}/resources/{resourceId}
+{
+	"session": "sdfr234",
+	"resource":
+	{
+	 	"description": "sdfdsf",  <------ any values you want to update
+	}
+}
+
+RESPONSE - 204 No content
+
+RESPONSE - 403 Forbidden "You cannot edit that field"
+
+RESPONSE - 401 unauthorised  "session invalid/expired"
 
 
 
@@ -399,7 +414,7 @@ RESPONSE - 200 OK
 Get resources offered by a person
 //=======================================================================================================================================================================
 
-REQUEST - GET /users/{userId}/resources  <--- see line 69ish for details ^
+REQUEST - GET /users/{userId}/resources  <--- see line 69ish for details of response^
 
 
 
@@ -410,14 +425,13 @@ REQUEST - PUT /users/{userId}/profile
 {
 	"session":"se23esdf"
 	"address":"blarg",  <--- any fields the user wants to update
-	"password":"234"    <--- their password to revalidate
 }
 
-RESPONSE - 204 No content
+RESPONSE - 204 No content   "Successfully updated"
 
 RESPONSE - 404 not found  "No trade with that ID exists"
 
 RESPONSE - 401 unauthorised  "Session invalid/expired"
 
-RESPONSE - something to do with trying to edit fields you can't do
+RESPONSE - something to do with trying to edit fields you can't do  403 forbidden?
 
