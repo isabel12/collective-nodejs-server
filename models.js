@@ -1,8 +1,4 @@
-var crypto = require('crypto'),
-    User,
-    LoginToken,
-    LocationSchema,
-    UserProfile;
+var crypto = require('crypto');
 
 
 function defineModels(mongoose, fn) {
@@ -18,18 +14,18 @@ function defineModels(mongoose, fn) {
   /**
     * Model: User
     */
-  User = new Schema({
+  var UserSchema = new Schema({
     'email': { type: String, validate: [validatePresenceOf, 'an email is required'], index: { unique: true } },
     'hashed_password': String,
     'salt': String
   });
 
-  User.virtual('id')
+  UserSchema.virtual('id')
     .get(function() {
       return this._id.toHexString();
     });
 
-  User.virtual('password')
+  UserSchema.virtual('password')
     .set(function(password) {
       this._password = password;
       this.salt = this.makeSalt();
@@ -37,19 +33,19 @@ function defineModels(mongoose, fn) {
     })
     .get(function() { return this._password; });
 
-  User.method('authenticate', function(plainText) {
+  UserSchema.method('authenticate', function(plainText) {
     return this.encryptPassword(plainText) === this.hashed_password;
   });
   
-  User.method('makeSalt', function() {
+  UserSchema.method('makeSalt', function() {
     return Math.round((new Date().valueOf() * Math.random())) + '';
   });
 
-  User.method('encryptPassword', function(password) {
+  UserSchema.method('encryptPassword', function(password) {
     return crypto.createHmac('sha1', this.salt).update(password).digest('hex');
   });
 
-  User.pre('save', function(next) {
+  UserSchema.pre('save', function(next) {
     if (!validatePresenceOf(this.password)) {
       next(new Error('Invalid password'));
     } else {
@@ -59,12 +55,10 @@ function defineModels(mongoose, fn) {
 
 
 
-
-
   /**
     * Model: UserProfile
     */
-  UserProfile = new Schema({
+  var UserProfileSchema = new Schema({
     'userId': { type: String, validate: [validatePresenceOf, 'the profile must belong to a user'], index: {unique: true} },
     'firstName': String,
     'lastName': String, 
@@ -78,22 +72,23 @@ function defineModels(mongoose, fn) {
   });
 
 
+
   /**
     * Model: LoginToken
     *
     * Used for session persistence.
     */
-  LoginToken = new Schema({
+  var LoginTokenSchema = new Schema({
     lastUpdated: { type: Date, index:{expires: 600}}, // expires and is deleted after 10 minutes
     userId: { type: String, index: true },
     token: { type: String, index: true }
   });
 
-  LoginToken.method('randomToken', function() {
+  LoginTokenSchema.method('randomToken', function() {
     return Math.round((new Date().valueOf() * Math.random())) + '';
   });
 
-  LoginToken.method('update',function(){
+  LoginTokenSchema.method('update',function(){
     // Automatically create the tokens
     if(!this.token){
       this.token = this.randomToken();
@@ -105,9 +100,9 @@ function defineModels(mongoose, fn) {
 
 
   // create the models
-  mongoose.model('User', User);
-  mongoose.model('LoginToken', LoginToken);
-  mongoose.model('UserProfile', UserProfile);
+  mongoose.model('User', UserSchema);
+  mongoose.model('LoginToken', LoginTokenSchema);
+  mongoose.model('UserProfile', UserProfileSchema);
 
   // callback 
   fn();
