@@ -1,6 +1,8 @@
 var crypto = require('crypto'),
     User,
-    LoginToken;
+    LoginToken,
+    LocationSchema,
+    UserProfile;
 
 
 function defineModels(mongoose, fn) {
@@ -8,13 +10,14 @@ function defineModels(mongoose, fn) {
       ObjectId = Schema.ObjectId;
 
 
-  /**
-    * Model: User
-    */
+  // A function used by string fields that are required    
   function validatePresenceOf(value) {
     return value && value.length;
   }
 
+  /**
+    * Model: User
+    */
   User = new Schema({
     'email': { type: String, validate: [validatePresenceOf, 'an email is required'], index: { unique: true } },
     'hashed_password': String,
@@ -54,6 +57,27 @@ function defineModels(mongoose, fn) {
     }
   });
 
+
+
+
+
+  /**
+    * Model: UserProfile
+    */
+  UserProfile = new Schema({
+    'userId': { type: String, validate: [validatePresenceOf, 'the profile must belong to a user'], index: {unique: true} },
+    'firstName': String,
+    'lastName': String, 
+    'address': String,
+    'city': String,
+    'location': Object,
+    'resources': [],
+    'trades': [],
+    'phone': String,
+    'email': String,
+  });
+
+
   /**
     * Model: LoginToken
     *
@@ -79,15 +103,15 @@ function defineModels(mongoose, fn) {
     return this.token;
   });
 
-  LoginToken.virtual('id')
-    .get(function() {
-      return this._id.toHexString();
-    });
 
+  // create the models
   mongoose.model('User', User);
   mongoose.model('LoginToken', LoginToken);
+  mongoose.model('UserProfile', UserProfile);
 
+  // callback 
   fn();
 }
 
+// declare the defineModels method as accessible as a library function
 exports.defineModels = defineModels; 

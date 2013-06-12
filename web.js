@@ -2,7 +2,7 @@ var express = require("express");
 var mongoose = require ("mongoose"); 
 var fs = require("fs");
 var models = require('./models');
-var User, LoginToken;
+var User, LoginToken, UserProfile;
 
 
 // find appropriate db to connect to, default to localhost
@@ -37,6 +37,7 @@ mongoose.connect(uristring, function (err, res) {
 models.defineModels(mongoose, function() {
 	User = mongoose.model('User');
 	LoginToken = mongoose.model('LoginToken');
+	UserProfile = mongoose.model('UserProfile');
 })
 
 
@@ -148,7 +149,12 @@ app.get('/test', validateSession, function(request, response){
 // POST '/users'
 // {
 //	"email":"isabel.broomenicholson@gmail.com",
-//	"password":"password"
+//	"password":"password",
+//  "firstName": "Isabel",
+// 	"lastName":"Broome-Nicholson",
+//	"address": "Cool place on the hill",
+//  "city": "Wellington",
+//  "phone": "0211111111"
 // }
 //
 // Allows the user to register.  Currently doesn't do anything except create a user, but can be extended to add more items later.
@@ -156,6 +162,7 @@ app.post('/users', function(request, response){
 
 	var email = request.body.email;
 	var password = request.body.password;
+	var firstName = request.body
 
 	
 	User.find({'email':request.body.email}, function (err, existingUsers) {
@@ -173,9 +180,13 @@ app.post('/users', function(request, response){
 		}
 
 	  	// create a new user
-	  	var newUser = new User({email:email});
+	  	var newUser = new User({'email':email});
 	  	newUser.set('password', password);
 	  	newUser.save(errorFunction);
+
+	  	// create new profile
+	  	var newProfile = new UserProfile({'firstName': firstName, 'userId': newUser.id});
+	  	newProfile.save(errorFunction);
 
 	  	// send the new user
 	  	response.send(newUser);
