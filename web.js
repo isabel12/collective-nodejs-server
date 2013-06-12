@@ -7,9 +7,9 @@ var User, LoginToken;
 
 // find appropriate db to connect to, default to localhost
 var uristring = 
-  process.env.MONGOLAB_URI || 
-  process.env.MONGOHQ_URL || 
-  'mongodb://localhost/HelloMongoose';
+process.env.MONGOLAB_URI || 
+process.env.MONGOHQ_URL || 
+'mongodb://localhost/HelloMongoose';
 
 // the appropriate port, or default to 5000  
 var port = process.env.PORT || 5000;
@@ -19,124 +19,230 @@ var port = process.env.PORT || 5000;
 var app = express();
 app.use(express.logger());
 app.use(express.bodyParser());  // allows the app to read JSON from body
+app.use(express.cookieParser());
 
 
 // Makes connection asynchronously.  Mongoose will queue up database
 // operations and release them when the connection is complete.
 mongoose.connect(uristring, function (err, res) {
-  if (err) { 
-    console.log ('ERROR connecting to: ' + uristring + '. ' + err);
-  } else {
-    console.log ('Succeeded connected to: ' + uristring);
-  }
+	if (err) { 
+		console.log ('ERROR connecting to: ' + uristring + '. ' + err);
+	} else {
+		console.log ('Succeeded connected to: ' + uristring);
+	}
 });
-
-
-// Define the User object
-//----------------------------------------------------------------------------
-
-// This is the schema.  Note the types, validation and trim
-// statements.  They enforce useful constraints on the data.
-var userSchema = new mongoose.Schema({
-  name: {
-    first: String,
-    last: { type: String, trim: true }
-  },
-  age: { type: Number, min: 0}
-});
-
-// Compiles the schema into a model, opening (or creating, if
-// nonexistent) the 'PowerUsers' collection in the MongoDB database
-var PUser = mongoose.model('PowerUsers', userSchema);
-
-//----------------------------------------------------------------------------
 
 
 // setup the models
 models.defineModels(mongoose, function() {
-  User = mongoose.model('User');
-  LoginToken = mongoose.model('LoginToken');
+	User = mongoose.model('User');
+	LoginToken = mongoose.model('LoginToken');
 })
-
-
-
-
-
-
-
 
 
 // The API end points
 //--------------------------------------------------------------------------------------------------------------
-var errorFunction = function(err){if (err) console.log('Error on save!')};
+var errorFunction = function(err){
+	if (err) {
+		console.log('Database error: ' + err);
+	}
+};
 
 
-
-app.get('/createToken/:id', function(request, response){
-
-	var newToken = new LoginToken({userId: request.params.id});
-
-	newToken.save(errorFunction);
-
-	response.send('success!');
-
-});
-
-app.get('/getAllTokens', function(request, response){
+// This function is called before each restricted API endpoint.  It checks the session 
+// is current, and saves the user's id into the request.user_id field, for easier access.
+function validateSession(request, response, next){
 
 
-	LoginToken.find(function (err, tokens) {
-	  if (err){
-	  	response.send(500);
-	  }
+	var sessionId = request.get('Authorization');
+	console.log('sessionId received: ' + sessionId);
 
-	  response.send(tokens);
-	})
+	// get the token
+	LoginToken.findOne({'token':sessionId}, function(err, token){
 
-});
+		if(err){
+			errorFunction(err);
+			return;
+		}
 
+		if(token == null){
+			response.send(401, 'Session has expired or is invalid.  Please log in again.');
+			return;
+		}
 
+		token.update();
+		token.save(errorFunction);
 
-//
-// eg.  Content-Type: application/json
-//      {"name":{"first":"isabel",  "last":"Broome-Nicholson"},"age":25}
-//
-// POST '/user'
-// creates a user, and returns them
-app.post('/user', function(request, response){
+		//get the user, and put in request
+		User.findById(token.userId, function(err, user){
+			if(err){
+				errorFunction(err);
+				return;
+			}
 
-	// read the values of the post body
-	var firstname = request.body.name.first;
-	var lastname = request.body.name.last;
-	var age = request.body.age;
+			if(user == null){
+				response.send(500, 'Woops, server error.');
+				return;
+			}
 
-	// create a new user 
-	var newUser = new PUser ({
-		name: { first: firstname, last: lastname },
-		age: age
+			request.user_id = user.id;
+
+			// continue on to the original method
+			next();
+		});
 	});
-	
-	// save them
-	newUser.save(errorFunction);
+}
 
-	// send the response 
-	response.send(newUser);  // returns it as application/json
+
+app.get('/', function(request, response){
+
+
+	var methods = '';
+	methods += 'GET /getAllTokens <br>';
+	methods += 'Test method.  Gets all active login tokens <br><br>';
+
+	methods += 'GET /test (requires authentication) <br>';
+	methods += 'Test method.  Prints a message if you have included an active session key in the \'Authorization\' header <br><br>';
+
+	methods += 'POST /users {"email":"asder@gmail.com", "password":"123"}<br>';
+	methods += 'Registers a new user <br><br>';
+
+	methods += 'POST /login {"email":"asder@gmail.com", "password":"123"}<br>';
+	methods += 'Logs the user in, returning the session.  This should be included in the \'Authorization\' header for requests requiring authentication <br><br>';
+
+	methods += 'GET /users<br>';
+	methods += 'Gets all users <br><br>';
+
+	methods += 'GET /users/{userId}<br>';
+	methods += 'Gets an individual user <br><br>';
+
+
+	response.send(methods);
+});
+
+
+
+// GET '/getAllTokens'
+// Helper method.  Returns all active login tokens.
+app.get('/getAllTokens', function(request, response){
+	LoginToken.find(function (err, tokens) {
+		if (err){
+			response.send(500);
+		}
+
+		response.send(tokens);
+	});
+
+});
+
+
+
+// GET '/test'
+// An example method that uses validateSession to make sure you are logged in.
+app.get('/test', validateSession, function(request, response){
+	response.send("Yay, you are logged in!");
+});
+
+
+
+// POST '/users'
+// {
+//	"email":"isabel.broomenicholson@gmail.com",
+//	"password":"password"
+// }
+//
+// Allows the user to register.  Currently doesn't do anything except create a user, but can be extended to add more items later.
+app.post('/users', function(request, response){
+
+	var email = request.body.email;
+	var password = request.body.password;
+
+	
+	User.find({'email':request.body.email}, function (err, existingUsers) {
+		// if the query errors out
+		if (err){
+			response.send(500);
+			return;
+		}
+ 
+ 		// check the user doesn't exist already
+		if(existingUsers.length != 0){
+			console.log('An account already exists for that email.');
+			response.send(403, 'An account already exists for that email.');
+			return;
+		}
+
+	  	// create a new user
+	  	var newUser = new User({email:email});
+	  	newUser.set('password', password);
+	  	newUser.save(errorFunction);
+
+	  	// send the new user
+	  	response.send(newUser);
+	  });
+});
+
+
+
+// POST '/login'
+// {
+//	"email":"isabel.broomenicholson@gmail.com",
+//	"password":"password"
+// }
+//
+// Allows the user to login.
+app.post('/login', function(request, response){
+	var email = request.body.email;
+	var password = request.body.password;
+
+	// get associated user
+	User.findOne({'email':email}, function(err, user) {
+		
+		if(err){
+			errorFunction(err);			
+			response.send(500);
+			return;
+		}
+		
+		// check user exists, and password is valid
+		var validated = (user != null) && (user.authenticate(password)); 
+		if(!validated){
+			response.send(401, 'Email/password combination is invalid.');
+			return;
+		}
+
+		// create / update the token, and return result
+		LoginToken.findOne({'userId':user._id}, function(err, token){
+			if(err){
+				errorFunction(err);
+			}
+			else {
+				if(token == null) {
+					token = new LoginToken({'userId':user._id});
+				}
+				var session = token.update();
+				token.save(errorFunction);
+
+				response.send({'session':session});
+			}
+		});		
+	});
 });
 
 
 // GET '/user/{id}'
-// returns the user with the given id
-app.get('/user/:id', function(request, response){
+// Returns the user with the given id.
+app.get('/users/:id', function(request, response){
 
 	var id = request.params.id;
 
 	// define the query
-	var query = PUser.findById(id);
+	var query = User.findById(id);
 
 	// execute the query
 	query.exec(function(err, result) {
 		if (!err){
-			response.send(result); 
+			response.send(JSON.stringify(result, undefined, 2)); 
 		}
 		else {
 			response.send(500, 'An error happened with the query');  // returns the error code
@@ -146,11 +252,11 @@ app.get('/user/:id', function(request, response){
 
 
 // GET '/user'
-// returns all users
-app.get('/user', function(request, response) {
+// Returns all users.
+app.get('/users', function(request, response) {
 
 	// make a query to find some users
-	var query = PUser.find({'age': 25}); 
+	var query = User.find();
 	
 	// return all the results so far
 	query.exec(function(err, result) {
@@ -165,5 +271,5 @@ app.get('/user', function(request, response) {
 
 
 app.listen(port, function() {
-  console.log("Listening on " + port);
+	console.log("Listening on " + port);
 });

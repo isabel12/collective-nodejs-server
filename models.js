@@ -60,7 +60,7 @@ function defineModels(mongoose, fn) {
     * Used for session persistence.
     */
   LoginToken = new Schema({
-    lastUpdated: { type: Date, index:{expires: 60}}, // expires after 60 seconds hopefully!
+    lastUpdated: { type: Date, index:{expires: 600}}, // expires and is deleted after 10 minutes
     userId: { type: String, index: true },
     token: { type: String, index: true }
   });
@@ -69,15 +69,14 @@ function defineModels(mongoose, fn) {
     return Math.round((new Date().valueOf() * Math.random())) + '';
   });
 
-  LoginToken.pre('save', function(next) {
+  LoginToken.method('update',function(){
     // Automatically create the tokens
     if(!this.token){
       this.token = this.randomToken();
     }
-
     this.lastUpdated = new Date();
 
-    next();
+    return this.token;
   });
 
   LoginToken.virtual('id')
