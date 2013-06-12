@@ -1,6 +1,8 @@
 var express = require("express");
 var mongoose = require ("mongoose"); 
 var fs = require("fs");
+var models = require('./models');
+var User, LoginToken;
 
 
 // find appropriate db to connect to, default to localhost
@@ -50,6 +52,16 @@ var PUser = mongoose.model('PowerUsers', userSchema);
 //----------------------------------------------------------------------------
 
 
+// setup the models
+models.defineModels(mongoose, function() {
+  User = mongoose.model('User');
+  LoginToken = mongoose.model('LoginToken');
+})
+
+
+
+
+
 
 
 
@@ -57,6 +69,32 @@ var PUser = mongoose.model('PowerUsers', userSchema);
 // The API end points
 //--------------------------------------------------------------------------------------------------------------
 var errorFunction = function(err){if (err) console.log('Error on save!')};
+
+
+
+app.get('/createToken/:id', function(request, response){
+
+	var newToken = new LoginToken({userId: request.params.id});
+
+	newToken.save(errorFunction);
+
+	response.send('success!');
+
+});
+
+app.get('/getAllTokens', function(request, response){
+
+
+	LoginToken.find(function (err, tokens) {
+	  if (err){
+	  	response.send(500);
+	  }
+
+	  response.send(tokens);
+	})
+
+});
+
 
 
 //

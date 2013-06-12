@@ -374,7 +374,7 @@ RESPONSE - 200 OK
 Get a profile
 //=======================================================================================================================================================================
 
-REQUEST - GET /users/{userId}/profile
+REQUEST - GET /users/{userId}
 {
 	"session": "sdfr234"
 }
@@ -421,7 +421,7 @@ REQUEST - GET /users/{userId}/resources  <--- see line 69ish for details of resp
 Edit a profile
 //=======================================================================================================================================================================
 
-REQUEST - PUT /users/{userId}/profile
+REQUEST - PUT /users/{userId}
 {
 	"session":"se23esdf"
 	"address":"blarg",  <--- any fields the user wants to update
