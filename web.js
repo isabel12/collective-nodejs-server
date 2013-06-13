@@ -2,7 +2,7 @@ var express = require("express");
 var mongoose = require ("mongoose"); 
 var fs = require("fs");
 var models = require('./models');
-var User, LoginToken, UserProfile;
+var User, LoginToken, Profile;
 
 
 // find appropriate db to connect to, default to localhost
@@ -37,7 +37,7 @@ mongoose.connect(uristring, function (err, res) {
 models.defineModels(mongoose, function() {
 	User = mongoose.model('User');
 	LoginToken = mongoose.model('LoginToken');
-	UserProfile = mongoose.model('UserProfile');
+	Profile = mongoose.model('RTProfile');
 })
 
 
@@ -180,16 +180,17 @@ app.post('/users', function(request, response){
 		}
 
 	  	// create a new user
-	  	var newUser = new User({'email':email});
+	  	var newUser = new User(request.body);
 	  	newUser.set('password', password);
 	  	newUser.save(errorFunction);
+	  	console.log(JSON.stringify(newUser, undefined, 2));
 
-	  	// create new profile
-	  	var newProfile = new UserProfile({'firstName': firstName, 'userId': newUser.id});
-	  	newProfile.save(errorFunction);
+	  	var profile = new Profile(newUser);
+	  	profile.session = request.get('Authorization');
+	  	console.log(JSON.stringify(profile, undefined, 2));
 
 	  	// send the new user
-	  	response.send(newUser);
+	  	response.send(profile);
 	  });
 });
 
@@ -253,7 +254,10 @@ app.get('/users/:id', function(request, response){
 	// execute the query
 	query.exec(function(err, result) {
 		if (!err){
-			response.send(JSON.stringify(result, undefined, 2)); 
+			var profile = new Profile(result);
+	  		profile.session = request.get('Authorization');
+
+			response.send(JSON.stringify(profile, undefined, 2)); 
 		}
 		else {
 			response.send(500, 'An error happened with the query');  // returns the error code
@@ -263,7 +267,7 @@ app.get('/users/:id', function(request, response){
 
 
 // GET '/user'
-// Returns all users.
+// Returns all users.  Test method
 app.get('/users', function(request, response) {
 
 	// make a query to find some users
