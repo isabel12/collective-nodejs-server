@@ -11,13 +11,42 @@ function defineModels(mongoose, fn) {
     return value && value.length;
   }
 
+
+  /**
+    * Model: Location
+    */
+  var LocationSchema = new Schema({
+    'lat': Number,
+    'lon': Number
+  });
+
+
+  var RTProfileSchema = new Schema({
+    'email': { type: String, validate: [validatePresenceOf, 'an email is required'], index: { unique: true } },
+    'firstName': String,
+    'lastName': String, 
+    'address': String,
+    'city': String,
+    'phone': String,
+    'session': String
+  });
+
   /**
     * Model: User
     */
   var UserSchema = new Schema({
     'email': { type: String, validate: [validatePresenceOf, 'an email is required'], index: { unique: true } },
     'hashed_password': String,
-    'salt': String
+    'salt': String,
+    'firstName': String,
+    'lastName': String, 
+    'address': String,
+    'city': String,
+    'location': Object,
+    'resources': [],
+    'trades': [],
+    'reviews':[],
+    'phone': String,
   });
 
   UserSchema.virtual('id')
@@ -55,23 +84,6 @@ function defineModels(mongoose, fn) {
 
 
 
-  /**
-    * Model: UserProfile
-    */
-  var UserProfileSchema = new Schema({
-    'userId': { type: String, validate: [validatePresenceOf, 'the profile must belong to a user'], index: {unique: true} },
-    'firstName': String,
-    'lastName': String, 
-    'address': String,
-    'city': String,
-    'location': Object,
-    'resources': [],
-    'trades': [],
-    'phone': String,
-    'email': String,
-  });
-
-
 
   /**
     * Model: LoginToken
@@ -102,7 +114,8 @@ function defineModels(mongoose, fn) {
   // create the models
   mongoose.model('User', UserSchema);
   mongoose.model('LoginToken', LoginTokenSchema);
-  mongoose.model('UserProfile', UserProfileSchema);
+  mongoose.model('Location', LocationSchema);
+  mongoose.model('RTProfile', RTProfileSchema);
 
   // callback 
   fn();
