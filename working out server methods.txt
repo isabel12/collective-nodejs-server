@@ -60,11 +60,8 @@ RESPONSE - 403 Forbidden - "an account already exists for that user"
 Get all resources in the area
 //=======================================================================================================================================================================
 
-REQUEST - GET /resources?lat=123.4&lon=234.56&radius=500  <--- used by map screen
-{
-	"session":"12serr",
-	"filters": ["spade", "compost"]
-}
+REQUEST - GET /resources?lat=123.4&lon=234.56&radius=500&filter="spade"&filter="compost"  <--- used by map screen
+(requires session id in header)
 
 RESPONSE - 200 OK
 {
@@ -95,14 +92,12 @@ Get an individual resource
 //=======================================================================================================================================================================
 
 REQUEST - GET /resources/{resourceId}
-{
-	"session": "sdfr234"
-}
+requires sessionkey in header
 
 RESPONSE - 200 OK
 {
 	"resource":{
-		"resourceId": 123,
+		"resourceId": "x123",
 		"resourceType":"tools"
 		"location":{
 			"lat": 123.4,
@@ -208,11 +203,9 @@ Location: http://www.ourwebsite.com/users/23/trades/12
 	"borrowerId":34,
 	"messages":[
 		{
-			"tradeId":12,
 			"messageId":567,
 			"date":"1997-07-16T19:20:30+01:00",
 			"from":34,
-			"to":23,
 			"text":"gimme"
 		}
 	]
