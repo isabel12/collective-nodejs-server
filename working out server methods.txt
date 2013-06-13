@@ -49,7 +49,6 @@ Location: /users/{userId}
 	"city": "wgt",
 	"phone": "12345",
 	"email": "sdfd@dfdsf.com",
-	"password": "hello",
 	"picture": {}
 } 
 
