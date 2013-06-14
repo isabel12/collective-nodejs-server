@@ -2,7 +2,7 @@ var express = require("express");
 var mongoose = require ("mongoose"); 
 var fs = require("fs");
 var models = require('./models');
-var User, LoginToken, Profile;
+var User, Review, LoginToken, Profile;
 
 
 // find appropriate db to connect to, default to localhost
@@ -19,7 +19,11 @@ var port = process.env.PORT || 5000;
 var app = express();
 app.use(express.logger());
 app.use(express.bodyParser());  // allows the app to read JSON from body
-app.use(express.cookieParser());
+
+
+
+
+
 
 
 // Makes connection asynchronously.  Mongoose will queue up database
@@ -38,7 +42,28 @@ models.defineModels(mongoose, function() {
 	User = mongoose.model('User');
 	LoginToken = mongoose.model('LoginToken');
 	Profile = mongoose.model('RTProfile');
+	Review = mongoose.model('Review');
 })
+
+
+
+
+// Basic Auth
+var auth = express.basicAuth(function(user, pass, callback) {
+	User.findById(user, function(err, user){
+		
+		if (!err){
+			var authenticated =  user.authenticate(pass);
+			
+			if (!authenticated){
+				err = new Error('Username and password do not match');
+			}
+		}
+
+		callback(err, user);
+	}); 
+});
+
 
 
 // The API end points
@@ -48,6 +73,10 @@ var errorFunction = function(err){
 		console.log('Database error: ' + err);
 	}
 };
+
+
+
+
 
 
 // This function is called before each restricted API endpoint.  It checks the session 
@@ -140,8 +169,8 @@ app.get('/getAllTokens', function(request, response){
 
 // GET '/test'
 // An example method that uses validateSession to make sure you are logged in.
-app.get('/test', validateSession, function(request, response){
-	response.send("Yay, you are logged in!");
+app.get('/test', auth, function(request, response){
+	response.send("Yay, you are logged in! : " + request.user);
 });
 
 
@@ -151,6 +180,10 @@ app.get('/test', validateSession, function(request, response){
 //	"email":"isabel.broomenicholson@gmail.com",
 //	"password":"password",
 //  "firstName": "Isabel",
+//  "location":{
+//	 	"lat": "123.4",
+//		"lon": "123.3"
+//	},
 // 	"lastName":"Broome-Nicholson",
 //	"address": "Cool place on the hill",
 //  "city": "Wellington",
@@ -160,11 +193,13 @@ app.get('/test', validateSession, function(request, response){
 // Allows the user to register.  Currently doesn't do anything except create a user, but can be extended to add more items later.
 app.post('/users', function(request, response){
 
-	var email = request.body.email;
-	var password = request.body.password;
-	var firstName = request.body
+	// validate the location
+	var location = request.body.location;
+	if (location.lat < -90 || location.lat > 90 || location.lon < -180 || location.lon > 180){
+		response.send(400, "Invalid location.");
+		return;
+	}
 
-	
 	User.find({'email':request.body.email}, function (err, existingUsers) {
 		// if the query errors out
 		if (err){
@@ -181,10 +216,11 @@ app.post('/users', function(request, response){
 
 	  	// create a new user
 	  	var newUser = new User(request.body);
-	  	newUser.set('password', password);
+	  	newUser.set('password', request.body.password);
 	  	newUser.save(errorFunction);
 	  	console.log(JSON.stringify(newUser, undefined, 2));
 
+		// make the object to return
 	  	var profile = new Profile(newUser);
 	  	profile.session = request.get('Authorization');
 	  	console.log(JSON.stringify(profile, undefined, 2));
@@ -253,17 +289,52 @@ app.get('/users/:id', function(request, response){
 
 	// execute the query
 	query.exec(function(err, result) {
-		if (!err){
-			var profile = new Profile(result);
-	  		profile.session = request.get('Authorization');
 
-			response.send(JSON.stringify(profile, undefined, 2)); 
+		if (!err){
+			console.log(JSON.stringify(result, undefined, 2));
+
+			// populate the reviews
+			result.reviews[0].populate('reviewer', 'firstName lastName', function(error, user){
+				var profile = new Profile(user);
+		  		profile.session = request.get('Authorization');
+
+				response.send(JSON.stringify(profile, undefined, 2)); 
+			});
 		}
 		else {
 			response.send(500, 'An error happened with the query');  // returns the error code
 		}
 	});
 });
+
+//
+//
+//
+// POST 
+app.post('/users/:id/review', function(request, response){
+
+	var id = request.params.id;
+
+	// define the query
+	var query = User.findById(id);
+
+	// execute the query
+	query.exec(function(err, result) {
+		if (!err){
+
+			var review = new Review(request.body);
+			result.reviews.push(new Review(request.body));
+			result.save();
+
+			response.send(JSON.stringify(result, undefined, 2));
+		}
+		else {
+			response.send(500, 'An error happened with the query');  // returns the error code
+		}
+	});
+});
+
+
 
 
 // GET '/user'

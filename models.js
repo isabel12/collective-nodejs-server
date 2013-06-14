@@ -11,18 +11,11 @@ function defineModels(mongoose, fn) {
     return value && value.length;
   }
 
-
-  /**
-    * Model: Location
-    */
-  var LocationSchema = new Schema({
-    'lat': Number,
-    'lon': Number
-  });
-
-
+  //================================================================================================================
+  // Return types
+  //================================================================================================================
   var RTProfileSchema = new Schema({
-    'email': { type: String, validate: [validatePresenceOf, 'an email is required'], index: { unique: true } },
+    'email': String,
     'firstName': String,
     'lastName': String, 
     'address': String,
@@ -30,6 +23,20 @@ function defineModels(mongoose, fn) {
     'phone': String,
     'session': String
   });
+
+  //================================================================================================================
+
+
+  /**
+    * Model: Review
+    */
+  var ReviewSchema = new Schema({
+    'date': Date,
+    'reviewer': {'firstName':String, 'lastName':String, 'userId':String},
+    'score': {type: Number, max: 5, min: 0},
+    'message': String
+  });
+
 
   /**
     * Model: User
@@ -45,7 +52,7 @@ function defineModels(mongoose, fn) {
     'location': Object,
     'resources': [],
     'trades': [],
-    'reviews':[],
+    'reviews':[ReviewSchema],
     'phone': String,
   });
 
@@ -59,8 +66,7 @@ function defineModels(mongoose, fn) {
       this._password = password;
       this.salt = this.makeSalt();
       this.hashed_password = this.encryptPassword(password);
-    })
-    .get(function() { return this._password; });
+    });
 
   UserSchema.method('authenticate', function(plainText) {
     return this.encryptPassword(plainText) === this.hashed_password;
@@ -75,8 +81,8 @@ function defineModels(mongoose, fn) {
   });
 
   UserSchema.pre('save', function(next) {
-    if (!validatePresenceOf(this.password)) {
-      next(new Error('Invalid password'));
+    if (!validatePresenceOf(this.hashed_password)) {
+      next(new Error('User must have a password.'));
     } else {
       next();
     }
@@ -113,8 +119,8 @@ function defineModels(mongoose, fn) {
 
   // create the models
   mongoose.model('User', UserSchema);
+  mongoose.model('Review', ReviewSchema);
   mongoose.model('LoginToken', LoginTokenSchema);
-  mongoose.model('Location', LocationSchema);
   mongoose.model('RTProfile', RTProfileSchema);
 
   // callback 
