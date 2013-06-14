@@ -29,7 +29,7 @@ REQUEST - POST /users
 	},
 	"address":"blarg",
 	"city": "wgt",
-	"phone": "12345",
+	"postcode": 2345,
 	"email": "sdfd@dfdsf.com",
 	"password": "hello",
 	"picture": {}
