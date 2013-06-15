@@ -2,7 +2,9 @@ var express = require("express");
 var mongoose = require ("mongoose"); 
 var fs = require("fs");
 var models = require('./models');
-var User, Review, Profile;
+var jsonValidation = require('./jsonValidation');
+var User, Review, Profile, ProfileUpdate;  // mongoose schemas
+var UpdateProfileSchema, RegisterProfileSchema, validateJSON;// validation schemas
 
 
 // find appropriate db to connect to, default to localhost
@@ -37,7 +39,13 @@ models.defineModels(mongoose, function() {
 	User = mongoose.model('User');
 	Profile = mongoose.model('RTProfile');
 	Review = mongoose.model('Review');
+	ProfileUpdate = mongoose.model('ProfileUpdate');
 })
+
+// import the schemas
+UpdateProfileSchema = jsonValidation.UpdateProfileSchema;
+RegisterProfileSchema = jsonValidation.RegisterProfileSchema;
+validateJSON = jsonValidation.validateJSON;
 
 // Basic Auth
 var auth = express.basicAuth(function(user, pass, callback) {
@@ -138,8 +146,8 @@ app.get('/test', auth, function(request, response){
 //  "firstName": "Isabel",
 // 	"lastName":"Broome-Nicholson",
 //  "location":{
-// 	 	"lat": "13.4",
-// 		"lon": "123.3"
+// 	 	"lat": 13.4,
+// 		"lon": 123.3
 // 	},
 // 	"address": "Cool place on the hill",
 //  "city": "Wellington",
@@ -149,40 +157,20 @@ app.get('/test', auth, function(request, response){
 // Allows the user to register.  
 app.post('/users', function(request, response){
 
+	// tidy up input
 	var body = request.body;
-
-	// validate the location
-	var location = body.location;
-	if (location.lat < -90 || location.lat > 90 || location.lon < -180 || location.lon > 180){
-		response.send(400, "Invalid location.");
-		return;
-	}
-
-	// validate the email
 	body.email = body.email.trim().toLowerCase();
-	if (!body.email.match(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/)){
-		response.send(400, "Invalid email.");
-		return;
-	}
-
-	// validate the city
 	body.city = body.city.trim().toTitleCase();
-	if(!body.city.match(/^[A-Za-z]{3,20}\ ?([A-Za-z]{3,20})?$/)){
-		response.send(400, "Invalid city.");
-		return;
-	}
-
-	// validate the postcode
 	body.postcode = body.postcode.trim();
-	if (!body.postcode.match(/^[1-9][0-9]{3}$/)){
-		response.send(400, "Invalid postcode.");
-		return;
-	}
-
-	// capitalize the names
 	body.firstName = body.firstName.trim().capitalize();
 	body.lastName = body.lastName.trim().capitalize();
 
+	// validate input
+	var validationMessage = validateJSON(body, RegisterProfileSchema);
+	if (validationMessage){
+		response.send(400, validationMessage);
+		return;
+	}
 
 	// create the account
 	User.find({'email':request.body.email}, function (err, existingUsers) {
@@ -240,17 +228,44 @@ app.get('/users/:id', auth, function(request, response){
 });
 
 
+app.put('/users/:id', auth, function(request, response){
 
-// app.put('/users/:id', auth, function(request, response){
+	// tidy up input
+	var body = request.body;
+	body.city = body.city.trim().toTitleCase();
+	body.postcode = body.postcode.trim();
+	body.firstName = body.firstName.trim().capitalize();
+	body.lastName = body.lastName.trim().capitalize();
 
-// 	var email = request.body.email;
-// 	if ()
+	// validate input
+	var validationMessage = validateJSON(body, UpdateProfileSchema);
+	if (validationMessage){
+		response.send(400, validationMessage);
+		return;
+	}
 
+	// form update arguments
+	var updateArguments = new ProfileUpdate(body);
 
-
-// });
-
-
+	// update
+	User.update({'_id': request.user._id}, updateArguments, { multi: false }, function(err, numberAffected, raw){
+		if(!err){
+  			console.log('Profile updated: ', raw);
+  			User.findById(request.user._id, function(err, user){
+  				if (!err){
+  					var profile = new Profile(user);
+					profile.rating = user.rating;
+					response.send(200, JSON.stringify(profile, undefined, 2));
+  				}
+  				else {
+  					response.send(500, 'An error happened with the query');  
+  				}
+  			});	
+  		} else {
+  			response.send(500, 'An error happened with the query');  
+  		}	
+	});
+});
 
 
 
@@ -300,7 +315,7 @@ app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, respo
 });
 
 
-// GET '/user'
+// GET '/users'
 // Returns all users.  Test method
 app.get('/users', adminAuth, function(request, response) {
 

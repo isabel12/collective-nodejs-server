@@ -1,21 +1,3 @@
-Login screen
-//=======================================================================================================================================================================
-
-REQUEST - POST  /session
-{
-	"email": "ben@coolstuff.com",
-	"password": "123"
-}
-
-RESPONSE - 200 OK
-{
-	"session": "sdfr234"
-}
-
-RESPONSE - 401 unauthorised
-
-
-
 Register screen
 //=======================================================================================================================================================================
 
@@ -24,9 +6,10 @@ REQUEST - POST /users
 	"firstName": "John",
 	"lastName": "Smith",
 	"location":{
-		"lat": 123.4,
+		"lat": 83.4,
 		"lon": 123.3
 	},
+	"lookingFor":"Spade",
 	"address":"blarg",
 	"city": "wgt",
 	"postcode": "2345",
@@ -45,6 +28,7 @@ Location: /users/{userId}
 		"lat": 123.4,
 		"lon": 123.3
 	},
+	"lookingFor":"Spade",
 	"address":"blarg",
 	"city": "wgt",
 	"postcode": "2345",
@@ -70,25 +54,23 @@ RESPONSE - 200 OK
 	"rating":4.67,
 	"points":21,
 	"lookingFor":"Gardening tools (spades, pots), wood, land to plant.",																			
-	"review":[
+	"reviews":[
 		{
-			"recommendationId":234,
+			"reviewId":234,
 			"tradeId":12,
 			"date":"1997-07-16T19:20:30+01:00",
 			"reviewer":{"userId": 123, "firstName": "isabel", "lastName":"Broome-Nicholson"},
-			"reviewee":234,
 			"rating":4,
 			"message":"Yeah they were really awesome.  Two enthusiastic thumbs up."
 		},
 		{
-			"recommendationId":237,
+			"reviewId":237,
 			"tradeId":14,
 			"date":"1997-07-16T19:20:30+01:00",
 			"reviewer":{"userId": 123, "firstName": "Stan", "lastName":"Button"},
-			"reviewee":234,
 			"rating":5,
 			"message":"Three enthusiastic thumbs up."
-		},
+		}
 	]
 }
 

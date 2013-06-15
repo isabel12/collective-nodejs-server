@@ -27,6 +27,17 @@ function defineModels(mongoose, fn) {
     'reviews': [ReviewSchema]
   });
 
+  var ProfileUpdateSchema = new Schema({
+    'firstName': String,
+    'lastName': String, 
+    'address': String,
+    'city': String,
+    'postcode': String,
+    'lookingFor': String,
+  });
+
+
+
   //================================================================================================================
 
 
@@ -108,6 +119,7 @@ function defineModels(mongoose, fn) {
   mongoose.model('User', UserSchema);
   mongoose.model('Review', ReviewSchema);
   mongoose.model('RTProfile', RTProfileSchema);
+  mongoose.model('ProfileUpdate', ProfileUpdateSchema);
 
   // callback 
   fn();
