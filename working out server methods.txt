@@ -29,16 +29,16 @@ REQUEST - POST /users
 	},
 	"address":"blarg",
 	"city": "wgt",
-	"postcode": 2345,
+	"postcode": "2345",
 	"email": "sdfd@dfdsf.com",
 	"password": "hello",
 	"picture": {}
 } 
 
-RESPONSE - 201 Created
+RESPONSE - 201 Created  (change to no content later)
 Location: /users/{userId}
 {
-	"session":"123der"
+	"email": "sdfd@dfdsf.com",
 	"firstName": "John",
 	"lastName": "Smith",
 	"location":{
@@ -47,12 +47,67 @@ Location: /users/{userId}
 	},
 	"address":"blarg",
 	"city": "wgt",
-	"phone": "12345",
-	"email": "sdfd@dfdsf.com",
+	"postcode": "2345",
+	"points": 0,
 	"picture": {}
 } 
 
 RESPONSE - 403 Forbidden - "an account already exists for that user"
+
+
+
+
+Get a profile
+//=======================================================================================================================================================================
+
+REQUEST - GET /users/{userId}
+
+
+RESPONSE - 200 OK
+{
+	"firstName":"Thomas",
+	"lastName":"Norman",
+	"rating":4.67,
+	"points":21,
+	"lookingFor":"Gardening tools (spades, pots), wood, land to plant.",																			
+	"review":[
+		{
+			"recommendationId":234,
+			"tradeId":12,
+			"date":"1997-07-16T19:20:30+01:00",
+			"reviewer":{"userId": 123, "firstName": "isabel", "lastName":"Broome-Nicholson"},
+			"reviewee":234,
+			"rating":4,
+			"message":"Yeah they were really awesome.  Two enthusiastic thumbs up."
+		},
+		{
+			"recommendationId":237,
+			"tradeId":14,
+			"date":"1997-07-16T19:20:30+01:00",
+			"reviewer":{"userId": 123, "firstName": "Stan", "lastName":"Button"},
+			"reviewee":234,
+			"rating":5,
+			"message":"Three enthusiastic thumbs up."
+		},
+	]
+}
+
+
+
+
+
+Add a review
+//=======================================================================================================================================================================
+
+REQUEST - POST /users/{userId}/trades/{tradeId}/reviews
+{
+   "score": 5,
+   "message": "Awesome trade",
+}
+
+RESPONSE - 204 no content
+
+
 
 
 
@@ -362,44 +417,6 @@ RESPONSE - 200 OK
 }
 
 
-
-Get a profile
-//=======================================================================================================================================================================
-
-REQUEST - GET /users/{userId}
-{
-	"session": "sdfr234"
-}
-
-RESPONSE - 200 OK
-{
-	"firstName":"Thomas",
-	"lastName":"Norman",
-	"totalRating":4.67,
-	"points":21,
-	"lookingFor":"Gardening tools (spades, pots), wood, land to plant.",
-																						<------ deciding not to put in available items for now - images could be expensive
-	"recommendations":[
-		{
-			"recommendationId":234,
-			"tradeId":12,
-			"date":"1997-07-16T19:20:30+01:00",
-			"reviewer":{"userId": 123, "firstName": "isabel", "lastName":"Broome-Nicholson"},
-			"reviewee":234,
-			"rating":4,
-			"message":"Yeah they were really awesome.  Two enthusiastic thumbs up."
-		},
-		{
-			"recommendationId":237,
-			"tradeId":14,
-			"date":"1997-07-16T19:20:30+01:00",
-			"reviewer":{"userId": 123, "firstName": "Stan", "lastName":"Button"},
-			"reviewee":234,
-			"rating":5,
-			"message":"Three enthusiastic thumbs up."
-		},
-	]
-}
 
 
 

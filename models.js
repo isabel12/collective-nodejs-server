@@ -20,9 +20,10 @@ function defineModels(mongoose, fn) {
     'lastName': String, 
     'address': String,
     'city': String,
-    'phone': String,
-    'session': String,
+    'postcode': String,
+    'lookingFor': String,
     'rating': Number,
+    'points': Number,
     'reviews': [ReviewSchema]
   });
 
@@ -46,17 +47,19 @@ function defineModels(mongoose, fn) {
     */
   var UserSchema = new Schema({
     'email': { type: String, validate: [validatePresenceOf, 'an email is required'], index: { unique: true } },
-    'hashed_password': String,
-    'salt': String,
     'firstName': String,
     'lastName': String, 
     'address': String,
     'city': String,
+    'postcode': String,
     'location': Object,
+    'points': Number,
+    'lookingFor': String,
     'resources': [],
     'trades': [],
     'reviews':[ReviewSchema],
-    'phone': String,
+    'hashed_password': String,
+    'salt': String
   });
 
   UserSchema.virtual('id')

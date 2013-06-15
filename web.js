@@ -136,26 +136,55 @@ app.get('/test', auth, function(request, response){
 // 	"email":"isabel.broomenicholson@gmail.com",
 // 	"password":"password",
 //  "firstName": "Isabel",
+// 	"lastName":"Broome-Nicholson",
 //  "location":{
-// 	 	"lat": "123.4",
+// 	 	"lat": "13.4",
 // 		"lon": "123.3"
 // 	},
-// 	"lastName":"Broome-Nicholson",
 // 	"address": "Cool place on the hill",
 //  "city": "Wellington",
-//  "phone": "0211111111"
+// 	"postcode":"6021"
 // }
 //
 // Allows the user to register.  
 app.post('/users', function(request, response){
 
+	var body = request.body;
+
 	// validate the location
-	var location = request.body.location;
+	var location = body.location;
 	if (location.lat < -90 || location.lat > 90 || location.lon < -180 || location.lon > 180){
 		response.send(400, "Invalid location.");
 		return;
 	}
 
+	// validate the email
+	body.email = body.email.trim().toLowerCase();
+	if (!body.email.match(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/)){
+		response.send(400, "Invalid email.");
+		return;
+	}
+
+	// validate the city
+	body.city = body.city.trim().toTitleCase();
+	if(!body.city.match(/^[A-Za-z]{3,20}\ ?([A-Za-z]{3,20})?$/)){
+		response.send(400, "Invalid city.");
+		return;
+	}
+
+	// validate the postcode
+	body.postcode = body.postcode.trim();
+	if (!body.postcode.match(/^[1-9][0-9]{3}$/)){
+		response.send(400, "Invalid postcode.");
+		return;
+	}
+
+	// capitalize the names
+	body.firstName = body.firstName.trim().capitalize();
+	body.lastName = body.lastName.trim().capitalize();
+
+
+	// create the account
 	User.find({'email':request.body.email}, function (err, existingUsers) {
 		// if the query errors out
 		if (err){
@@ -171,18 +200,19 @@ app.post('/users', function(request, response){
 		}
 
 	  	// create a new user
-	  	var newUser = new User(request.body);
-	  	newUser.set('password', request.body.password);
+	  	var newUser = new User(body);
+	  	newUser.points = 0;
+	  	newUser.set('password', body.password);
 	  	newUser.save(errorFunction);
-	  	console.log(JSON.stringify(newUser, undefined, 2));
+	  	console.log('New user created: ' + JSON.stringify(newUser, undefined, 2));
 
 		// make the object to return
 	  	var profile = new Profile(newUser);
-	  	profile.session = request.get('Authorization');
-	  	console.log(JSON.stringify(profile, undefined, 2));
+	  	profile.rating = 0;
+	  	console.log('Returning: ' + JSON.stringify(profile, undefined, 2));
 
 	  	// send the new user
-	  	response.send(profile);
+	  	response.send(201, profile);
 	  });
 });
 
@@ -210,13 +240,26 @@ app.get('/users/:id', auth, function(request, response){
 });
 
 
+
+// app.put('/users/:id', auth, function(request, response){
+
+// 	var email = request.body.email;
+// 	if ()
+
+
+
+// });
+
+
+
+
+
 // {
 //    "score": 5,
-//    "message": "Awesome trade",
-// 	  "tradeId": "234dlsdkfs23"
+//    "message": "Awesome trade"
 // }
 // POST 
-app.post('/users/:id/review', auth, function(request, response){
+app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, response){
 
 	// validate data
 	if (request.body.score < 0 || request.body.score > 5){
@@ -225,7 +268,8 @@ app.post('/users/:id/review', auth, function(request, response){
 	}
 
 	// get the reviewee id
-	var revieweeId = request.params.id;
+	var revieweeId = request.params.userId;
+	var tradeId = request.params.tradeId;
 
 	// define the query
 	var query = User.findById(revieweeId, function(err, reviewee) {
@@ -237,16 +281,17 @@ app.post('/users/:id/review', auth, function(request, response){
 			var review = new Review(request.body);
 			review.date = new Date();
 			review.reviewer = {'firstName':request.user.firstName, 'lastName': request.user.lastName, 'userId': request.user._id };	
+			review.tradeId = tradeId;
 			review.save(errorFunction);
 
 			console.log(JSON.stringify(review, undefined, 2));
 			// TODO - check the review is legal (ie. they both belong to the trade, and they haven't reviewed it yet)
 
-
 			// add the review
 			reviewee.reviews.push(review);
 			reviewee.save();
-			response.send(201, JSON.stringify(reviewee, undefined, 2));
+
+			response.send(204);
 		}
 		else {
 			response.send(500, 'An error happened with the query');  
@@ -274,3 +319,24 @@ app.get('/users', adminAuth, function(request, response) {
 app.listen(port, function() {
 	console.log("Listening on " + port);
 });
+
+
+
+
+
+
+
+//-------------------------------------------------------------------------------
+// string manipulation functions
+//-------------------------------------------------------------------------------
+
+
+String.prototype.capitalize = function()
+{
+	return this.charAt(0).toUpperCase() + this.substr(1).toLowerCase();
+};
+
+String.prototype.toTitleCase = function()
+{
+    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+}
