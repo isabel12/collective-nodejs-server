@@ -21,7 +21,9 @@ function defineModels(mongoose, fn) {
     'address': String,
     'city': String,
     'phone': String,
-    'session': String
+    'session': String,
+    'rating': Number,
+    'reviews': [ReviewSchema]
   });
 
   //================================================================================================================
@@ -32,8 +34,9 @@ function defineModels(mongoose, fn) {
     */
   var ReviewSchema = new Schema({
     'date': Date,
-    'reviewer': {'firstName':String, 'lastName':String, 'userId':String},
-    'score': {type: Number, max: 5, min: 0},
+    'tradeId': String,
+    'reviewer': {'firstName':String, 'lastName':String, 'userId': String},
+    'score': {type: Number, min: 0, max: 5},
     'message': String
   });
 
@@ -68,6 +71,15 @@ function defineModels(mongoose, fn) {
       this.hashed_password = this.encryptPassword(password);
     });
 
+  UserSchema.virtual('rating')
+    .get(function() {
+      var totalRating = 0.0;
+      for (var i = 0; i < this.reviews.length; i++) {
+        totalRating += this.reviews[i].score ? this.reviews[i].score : 0;
+      };
+      return (totalRating / this.reviews.length).toFixed(2);
+    });  
+
   UserSchema.method('authenticate', function(plainText) {
     return this.encryptPassword(plainText) === this.hashed_password;
   });
@@ -89,38 +101,9 @@ function defineModels(mongoose, fn) {
   });
 
 
-
-
-  /**
-    * Model: LoginToken
-    *
-    * Used for session persistence.
-    */
-  var LoginTokenSchema = new Schema({
-    lastUpdated: { type: Date, index:{expires: 600}}, // expires and is deleted after 10 minutes
-    userId: { type: String, index: true },
-    token: { type: String, index: true }
-  });
-
-  LoginTokenSchema.method('randomToken', function() {
-    return Math.round((new Date().valueOf() * Math.random())) + '';
-  });
-
-  LoginTokenSchema.method('update',function(){
-    // Automatically create the tokens
-    if(!this.token){
-      this.token = this.randomToken();
-    }
-    this.lastUpdated = new Date();
-
-    return this.token;
-  });
-
-
   // create the models
   mongoose.model('User', UserSchema);
   mongoose.model('Review', ReviewSchema);
-  mongoose.model('LoginToken', LoginTokenSchema);
   mongoose.model('RTProfile', RTProfileSchema);
 
   // callback 
