@@ -34,6 +34,7 @@ function defineModels(mongoose, fn) {
     'city': String,
     'postcode': String,
     'lookingFor': String,
+    'location':Object
   });
 
 

@@ -42,7 +42,7 @@ models.defineModels(mongoose, function() {
 	ProfileUpdate = mongoose.model('ProfileUpdate');
 })
 
-// import the schemas
+// import the validation schemas
 UpdateProfileSchema = jsonValidation.UpdateProfileSchema;
 RegisterProfileSchema = jsonValidation.RegisterProfileSchema;
 validateJSON = jsonValidation.validateJSON;
@@ -73,7 +73,7 @@ var auth = express.basicAuth(function(user, pass, callback) {
 	}); 
 });
 
-
+// admin authentication for test methods
 var adminAuth = express.basicAuth(function(user, pass, callback) {
 
 	console.log('reached admin authentication: ' + user + ' ' + pass);
@@ -168,6 +168,7 @@ app.post('/users', function(request, response){
 	// validate input
 	var validationMessage = validateJSON(body, RegisterProfileSchema);
 	if (validationMessage){
+		console.log("Validation failed: " + validationMessage);
 		response.send(400, validationMessage);
 		return;
 	}
@@ -228,7 +229,31 @@ app.get('/users/:id', auth, function(request, response){
 });
 
 
+
+// PUT '/user/{id}'
+//{
+//  "firstName": "Isabel",
+// 	"lastName":"Broome-Nicholson",
+//  "location":{
+// 	 	"lat": 13.4,
+// 		"lon": 123.3
+// 	},
+// 	"address": "Cool place on the hill",
+//  "city": "Wellington",
+// 	"postcode":"6021"
+// }
+//
+// Updates the given profile.  The JSON passed to the method can have as many or few of the required fields - the method will update
+// with the ones given.  The value of each field is validated, and only the fields that are allowed to be changed will be changed; 
+// all other fields will be ignored.
+//
+//
 app.put('/users/:id', auth, function(request, response){
+	// check it is your profile
+	if (request.params.id != request.user._id){
+		response.send(403, "You cannot edit a profile that is not yours.");
+		return;
+	}
 
 	// tidy up input
 	var body = request.body;
@@ -245,12 +270,18 @@ app.put('/users/:id', auth, function(request, response){
 	}
 
 	// form update arguments
-	var updateArguments = new ProfileUpdate(body);
+	var updateArguments = new ProfileUpdate(body).getFieldsExcludingId();
 
 	// update
-	User.update({'_id': request.user._id}, updateArguments, { multi: false }, function(err, numberAffected, raw){
+	User.update({'_id': request.params.id}, updateArguments, function(err, numberAffected, raw){
 		if(!err){
-  			console.log('Profile updated: ', raw);
+			// check the user existed
+			if(numberAffected == 0){
+				response.send(404, 'That user does not exist.');
+				return;
+			}
+
+			// send the updated profile back
   			User.findById(request.user._id, function(err, user){
   				if (!err){
   					var profile = new Profile(user);
@@ -266,7 +297,6 @@ app.put('/users/:id', auth, function(request, response){
   		}	
 	});
 });
-
 
 
 // {
@@ -355,3 +385,22 @@ String.prototype.toTitleCase = function()
 {
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 }
+
+
+
+//---------------------------------------------------------------------------------
+// Mongoose schema helper method
+//---------------------------------------------------------------------------------
+
+// This method gets all the public fields of the Schema object, ignoring all the Schema stuff and '_id' field.
+// Means can use the created Model as the update parameters.
+mongoose.Model.prototype.getFieldsExcludingId = function(){
+
+	var fields = new Array();
+	for(var field in this._doc){
+		if(field != '_id' ){
+			fields[field] = this._doc[field];
+		}
+	}
+	return fields;
+};
