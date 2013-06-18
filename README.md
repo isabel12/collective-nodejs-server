@@ -24,7 +24,7 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 	}
 
 #####Response
-* 200 - if successful (may be changed to 201 later)
+* 201 - if successful (may be changed to 204 later)
 * 400 - if field falidation failed.
 * 403 - if an account already exists.
 * 500 - if there was a server error.
@@ -72,7 +72,7 @@ all other fields will be ignored.
 	
 #####Response
 	{
-		"postcode": "6021",
+	 	"postcode": "6021",
 		"points": 0,
 		"lastName": "Broome-nicholson",
 		"firstName": "Isabel",
@@ -86,6 +86,25 @@ all other fields will be ignored.
 * 403 - if not your profile
 * 404 - if the user doesn't exist
 * 500 - if internal server error.
+
+
+###Add a review
+Adds a review from you to the user with the given {userId}, regarding the trade {tradeId}.  
+If the trade is still in progress, or you have already reviewed, you will not be able to add one.
+
+#####Request
+
+	POST '/users/{userId}/trades/{tradeId}/reviews'
+	{
+		"score": 5,
+		"message": "Awesome trade"
+	}
+
+#####Response
+* 204 - if successful
+* 400 - if the input is not valid
+* 403 - if you are not allowed to add a review to the given trade
+* 500 - if there is a server error
 
 
 
