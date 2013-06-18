@@ -55,6 +55,18 @@ function defineModels(mongoose, fn) {
 
 
   /**
+  * Model: Resource
+  */
+  var ResourceSchema = new Schema({
+    'type': String,
+    'title': String,
+    'description': String,
+    'location': Object,
+    'owner': {type: Schema.Types.ObjectId, ref: 'User'}
+  });
+
+
+  /**
     * Model: User
     */
   var UserSchema = new Schema({
@@ -68,7 +80,7 @@ function defineModels(mongoose, fn) {
     'points': Number,
     'lookingFor': String,
     'resources': [],
-    'trades': [],
+    'trades': [{type: Schema.Types.ObjectId, ref: 'Resource'}],
     'reviews':[ReviewSchema],
     'hashed_password': String,
     'salt': String
@@ -121,6 +133,7 @@ function defineModels(mongoose, fn) {
   mongoose.model('Review', ReviewSchema);
   mongoose.model('RTProfile', RTProfileSchema);
   mongoose.model('ProfileUpdate', ProfileUpdateSchema);
+  mongoose.model('Resource', ResourceSchema);
 
   // callback 
   fn();

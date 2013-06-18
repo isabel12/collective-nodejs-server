@@ -413,10 +413,18 @@ Edit a profile
 //=======================================================================================================================================================================
 
 REQUEST - PUT /users/{userId}
+ PUT '/user/{id}'
 {
-	"session":"se23esdf"
-	"address":"blarg",  <--- any fields the user wants to update
-}
+  	"firstName": "Isabel",
+ 	"lastName":"Broome-Nicholson",
+  	"location":{
+ 	 	"lat": 13.4,
+ 		"lon": 123.3
+ 	},
+ 	"address": "Cool place on the hill",
+  	"city": "Wellington",
+ 	"postcode":"6021"
+ }
 
 RESPONSE - 204 No content   "Successfully updated"
 

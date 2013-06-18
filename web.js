@@ -1,9 +1,11 @@
 var express = require("express");
 var mongoose = require ("mongoose"); 
 var fs = require("fs");
+var path = require("path");
+
 var models = require('./models');
 var jsonValidation = require('./jsonValidation');
-var User, Review, Profile, ProfileUpdate;  // mongoose schemas
+var User, Review, Profile, Resource, ProfileUpdate;  // mongoose schemas
 var UpdateProfileSchema, RegisterProfileSchema, validateJSON;// validation schemas
 
 
@@ -40,6 +42,7 @@ models.defineModels(mongoose, function() {
 	Profile = mongoose.model('RTProfile');
 	Review = mongoose.model('Review');
 	ProfileUpdate = mongoose.model('ProfileUpdate');
+	Resource = mongoose.model('Resource');
 })
 
 // import the validation schemas
@@ -109,26 +112,9 @@ var errorFunction = function(err){
 	}
 };
 
+
 app.get('/', function(request, response){
-
-
-	var methods = '';
-	methods += 'GET /getAllTokens <br>';
-	methods += 'Test method.  Gets all active login tokens <br><br>';
-
-	methods += 'GET /test (requires authentication) <br>';
-	methods += 'Test method.  Prints a message if you have included an active session key in the \'Authorization\' header <br><br>';
-
-	methods += 'POST /users {"email":"asder@gmail.com", "password":"123"}<br>';
-	methods += 'Registers a new user <br><br>';
-
-	methods += 'GET /users<br>';
-	methods += 'Gets all users <br><br>';
-
-	methods += 'GET /users/{userId}<br>';
-	methods += 'Gets an individual user <br><br>';
-
-	response.send(methods);
+	response.send('See <a href="https://github.com/isabel12/collective-nodejs-server/blob/master/README.md"> here </a> for API details');
 });
 
 
@@ -153,7 +139,7 @@ app.get('/test', auth, function(request, response){
 //  "city": "Wellington",
 // 	"postcode":"6021"
 // }
-//
+
 // Allows the user to register.  
 app.post('/users', function(request, response){
 
@@ -206,6 +192,9 @@ app.post('/users', function(request, response){
 });
 
 
+
+
+
 // GET '/user/{id}'
 // Returns the profile of the user with the given id.
 app.get('/users/:id', auth, function(request, response){
@@ -215,6 +204,10 @@ app.get('/users/:id', auth, function(request, response){
 
 		if (!err){
 			console.log(JSON.stringify(user, undefined, 2));
+			if (!user){
+				response.send(404, 'That user does not exist.');
+			}
+
 
 			var profile = new Profile(user);
 			profile.rating = user.rating;
@@ -231,13 +224,13 @@ app.get('/users/:id', auth, function(request, response){
 
 
 // PUT '/user/{id}'
-//{
+// {
 //  "firstName": "Isabel",
 // 	"lastName":"Broome-Nicholson",
-//  "location":{
-// 	 	"lat": 13.4,
-// 		"lon": 123.3
-// 	},
+ // "location":{
+	//  	"lat": 13.4,
+	// 	"lon": 123.3
+	// },
 // 	"address": "Cool place on the hill",
 //  "city": "Wellington",
 // 	"postcode":"6021"
@@ -303,7 +296,7 @@ app.put('/users/:id', auth, function(request, response){
 //    "score": 5,
 //    "message": "Awesome trade"
 // }
-// POST 
+// POST '/users/{userId}/trades/{tradeId}/reviews'
 app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, response){
 
 	// validate data
@@ -367,6 +360,89 @@ app.listen(port, function() {
 
 
 
+
+// method to upload a profile image
+app.post('/users/:id/image', auth, function(request, response){
+	var tempPath = request.files.file.path;
+	var targetPath = path.resolve('./images/users/profile/' + body.params.id + '.png');
+
+	if (path.extname(req.files.file.name).toLowerCase() === '.png'){
+		fs.rename(tempPath, targetPath, function(err){
+			if (err) {
+				console.log(err);
+				return;
+			}
+
+			console.log('Image uploaded to ' + targetPath);
+			response.send(204, 'Image uploaded to ' + targetPath);
+
+		});
+
+	} else {
+		fs.unlink(tempPath, function(){
+			if (err){
+				throw err;
+			}
+
+			console.log('Only .png files are allowed!');
+			response.send(400, 'Only .png files are allowed!');
+		})
+	}
+});
+
+
+// POST '/users/{userId}/resources'
+// {
+// 	"type": "tools",
+// 	"location":{
+// 	 	"lat": 13.4,
+// 		"lon": 123.3
+// 	},
+// 	"title": "Spade",
+// 	"description": "A bit battered, but still works fine.",
+// 	"points": 1
+// }
+app.post('/users/:id/resources', auth, function(request, response){
+
+	if(request.user._id != request.params.id){
+		response.send(403, 'You can only add resources to your own account.');
+		return;
+	}
+
+	// create the resource
+	var resource = new Resource(request.body);
+	resource.save(function(err){
+
+		if(err){
+			response.send(500);
+			return;
+		}
+
+		User.findById(request.params.id, function(err, user){
+
+			if(err){
+				response.send(500);
+				return;
+			}
+
+			if(!user){
+				response.send(404, 'That user does not exist');
+				return;
+			}
+
+			user.resources.push(resource._id);
+			user.save(function(err){
+				if(err){
+					response.send(500);
+					return;
+				}
+
+				response.send(201, JSON.stringify(resource, undefined, 2));
+			});
+
+		});
+	});
+});
 
 
 
