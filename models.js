@@ -1,6 +1,7 @@
 var crypto = require('crypto');
 
 
+
 function defineModels(mongoose, fn) {
   var Schema = mongoose.Schema,
       ObjectId = Schema.ObjectId;
@@ -61,9 +62,36 @@ function defineModels(mongoose, fn) {
     'type': String,
     'title': String,
     'description': String,
-    'location': Object,
+    'location': {type: Object, index: { type: '2dsphere', sparse: true }},
     'owner': {type: Schema.Types.ObjectId, ref: 'User'}
   });
+
+
+  ResourceSchema.virtual('locationReturnType')
+    .get(function(){
+      var value = {
+        type: this.type, 
+        _id:this._id, 
+        location: {lat: this.location.coordinates[1], lon: this.location.coordinates[0]}
+      };
+
+      return value;
+    });
+
+  ResourceSchema.virtual('returnType')
+    .get(function(){
+      var value = {
+        type: this.type, 
+        _id:this._id, 
+        title: this.title,
+        description: this.description,
+        owner: this.owner,
+        location: {lat: this.location.coordinates[1], lon: this.location.coordinates[0]}
+      };
+
+      return value;
+    });
+
 
 
   /**

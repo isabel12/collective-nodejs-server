@@ -6,7 +6,7 @@ var path = require("path");
 var models = require('./models');
 var jsonValidation = require('./jsonValidation');
 var User, Review, Profile, Resource, ProfileUpdate;  // mongoose schemas
-var UpdateProfileSchema, RegisterProfileSchema, validateJSON;// validation schemas
+var UpdateProfileSchema, RegisterProfileSchema, FilterResourceSchema, AddResourceSchema, validateJSON;// validation schemas
 
 
 // find appropriate db to connect to, default to localhost
@@ -48,7 +48,10 @@ models.defineModels(mongoose, function() {
 // import the validation schemas
 UpdateProfileSchema = jsonValidation.UpdateProfileSchema;
 RegisterProfileSchema = jsonValidation.RegisterProfileSchema;
+FilterResourceSchema = jsonValidation.FilterResourceSchema;
+AddResourceSchema = jsonValidation.AddResourceSchema;
 validateJSON = jsonValidation.validateJSON;
+
 
 // Basic Auth
 var auth = express.basicAuth(function(user, pass, callback) {
@@ -391,33 +394,48 @@ app.post('/users/:id/image', auth, function(request, response){
 });
 
 
-// POST '/users/{userId}/resources'
-// {
-// 	"type": "tools",
-// 	"location":{
-// 	 	"lat": 13.4,
-// 		"lon": 123.3
-// 	},
-// 	"title": "Spade",
-// 	"description": "A bit battered, but still works fine.",
-// 	"points": 1
-// }
+// 
+
+//
+//
+//
 app.post('/users/:id/resources', auth, function(request, response){
 
+	// make sure the user is editing their own resource
 	if(request.user._id != request.params.id){
 		response.send(403, 'You can only add resources to your own account.');
 		return;
 	}
 
+	// tidy up input
+	request.body.type = request.body.type.toLowerCase();
+	request.body.title = request.body.title.capitalize();
+	request.body.description = request.body.description.capitalize();
+
+	// validate input
+	var validationMessage = validateJSON(request.body, AddResourceSchema);
+	if (validationMessage){
+		response.send(400, validationMessage);
+		return;
+	}
+
+	// get location
+	var geoLoc = {type: "Point", coordinates: [request.body.location.lon, request.body.location.lat]};
+
 	// create the resource
 	var resource = new Resource(request.body);
+	resource.location = geoLoc;
+	resource.owner = request.user._id;
+
 	resource.save(function(err){
 
 		if(err){
 			response.send(500);
+			console.log(err);
 			return;
 		}
 
+		// find user
 		User.findById(request.params.id, function(err, user){
 
 			if(err){
@@ -425,11 +443,9 @@ app.post('/users/:id/resources', auth, function(request, response){
 				return;
 			}
 
-			if(!user){
-				response.send(404, 'That user does not exist');
-				return;
-			}
+			// note: not necessary to check user not null - auth already does it.
 
+			// add resource to users account
 			user.resources.push(resource._id);
 			user.save(function(err){
 				if(err){
@@ -437,11 +453,86 @@ app.post('/users/:id/resources', auth, function(request, response){
 					return;
 				}
 
-				response.send(201, JSON.stringify(resource, undefined, 2));
+				response.send(201, JSON.stringify(resource.returnType, undefined, 2));
 			});
 
 		});
 	});
+});
+
+
+
+// GET '/resources?lat={latitude}&lon={longitude}&radius={radiusInMetres}&filter={type1}&filter={type2}&searchterm=spade'
+//
+//	lat = latitude value.  Compulsary.
+//	lon = longitude value.  Compulsary.
+//  radius = the radius of the search area in metres from the given location.  Compulsary.
+//	filter = single or array of types to filter by.  Not compulsary.
+// 	searchterm = a single string to search titles by.  Not compulsary.
+//
+// Eg:
+//  /resources?lat=-41.315011&lon=174.778131&radius=800
+// 	/resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools
+//  /resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools&filter=compost
+//	/resources?lat=-41.315011&lon=174.778131&radius=200&filter=tools&searchterm=spade
+//
+//
+app.get('/resources', auth, function(request, response){
+	// get query string parameters
+	var lat = Number(request.query.lat);
+	var lon = Number(request.query.lon);
+	var radius = Number(request.query.radius);
+	var filters = typeof request.query.filter=="string"? new Array(request.query.filter) : request.query.filter; // put in array if single item
+	var searchTerm = request.query.searchterm;
+
+	// convert
+	request.query.lat = lat;
+	request.query.lon = lon;
+	request.query.radius = radius;
+	request.query.filter = filters;
+
+	// validate input
+	var validationMessage = validateJSON(request.query, FilterResourceSchema);
+	if (validationMessage){
+		console.log("Validation failed: " + validationMessage);
+		response.send(400, validationMessage);
+		return;
+	}
+
+	// add location to the query
+	var query = { 
+					location: { $near: 
+						{ $geometry: 
+							{  type : "Point" , 
+							   coordinates: [lon, lat] } },
+						$maxDistance : radius
+					}
+				};
+
+	// add filters to query
+	if(filters && (filters.length != 0)){
+		query.type = {$in: filters};
+	}
+
+	// add title search to query
+	query.title = new RegExp(searchTerm, 'i'); // 'i' means ignore case
+
+	// get results
+	Resource.find(query, 'type location _id', function(err, resources){
+
+		if(err){
+			response.send(500);
+			return;
+		}
+
+		// format and return
+		var result = new Array();
+		for (var i = 0; i < resources.length; i++) {
+			result[i] = resources[i].locationReturnType;
+		};
+		response.send(JSON.stringify(result, undefined, 2));
+	});
+
 });
 
 

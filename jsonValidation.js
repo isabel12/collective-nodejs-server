@@ -37,30 +37,59 @@ var updateProfileSchema = {
 		"address": {"type": "string"},
 		"city": {"type": "string", "pattern": /^[A-Za-z]{3,20}\ ?([A-Za-z]{3,20})?$/},
 		"postcode": {"type": "string",  "pattern": /^[1-9][0-9]{3}$/},
-		"location": {"$ref": "/Location", }
+		"location": {"$ref": "/Location" }
 	}
 };
 
 
+var filterResourceSchema = {
+	"id":"/FilterResource",
+	"type":"object",
+	"properties": {
+		"lat": {"type": "number", "required": true, "minimum": -90, "maximum": 90},
+		"lon": {"type": "number", "required": true, "minimum": -180, "maximum": 180},
+		"radius": {"type": "number", "required":true, "minimum": 0},
+		"filter": {"type": "array", "items": {"type": "string"}},
+		"searchterm": {"type": "string"}
+	}
+}
+
+var addResourceSchema = {
+	"id":"/AddResource",
+	"type":"object",
+	"properties": {
+		"location":{"$ref": "/Location" },
+		"type": {"type": "string", "required":true},
+		"title": {"type": "string", "required":true},
+		"description": {"type": "string", "required":true},
+		"points": {"type": "number", "required":true, "minimum": 1, "maximum": 5},
+	}
+}
+
 
 // A method that allows validating of JSON files.
-function validateJSON(body, schemaName){
+function validateJSON(body, schema){
 	var v = new Validator();
 	v.addSchema(locationSchema, '/Location');
 	v.addSchema(updateProfileSchema, '/ProfileUpdate');
 	v.addSchema(registerProfileSchema, '/ProfileRegister');
+	v.addSchema(filterResourceSchema, '/FilterResource');
+	v.addSchema(addResourceSchema, '/AddResource');
 
-	var validateResult = v.validate(body, registerProfileSchema);
+	var validateResult = v.validate(body, schema);
 	if (validateResult.length){
 		console.log(validateResult);
-		return validateResult[0].property.replace("instance.", "") + " is invalid.";
+		return validateResult[0].property.replace("instance.", "") + " field is invalid.";
 	}
 
 	return null;
 }
 
+// make the schemas and methods accessible
 exports.validateJSON = validateJSON;
 exports.UpdateProfileSchema = updateProfileSchema;
 exports.RegisterProfileSchema = registerProfileSchema;
+exports.FilterResourceSchema = filterResourceSchema;
+exports.AddResourceSchema = addResourceSchema;
 
 
