@@ -144,5 +144,111 @@ If the trade is still in progress, or you have already reviewed, you will not be
 * 403 - if you are not allowed to add a review to the given trade
 * 500 - if there is a server error
 
+### List a Resource
+
+####Request
+
+	POST '/users/{userId}/resources'
+	{
+		"type": "tools",
+		"location":{
+		 	"lat": -41.311736,
+			"lon": 174.776634
+		},
+		"title": "Axe",
+		"description": "Red",
+		"points": 1
+	}
+
+######'type'
+* Not locked down yet - will eventually check that it is one of the supported types
+* Automatically decapitalised
+
+######'points'
+* Must be between 1 and 5
+
+######'title'
+* Automatically capitalised
+
+######'description'
+* Automatically capitalised
+
+####Response
+201 - created
+
+	{
+	  "type": "tools",
+	  "_id": "51c23719cf5903101a000002",
+	  "title": "Axe",
+	  "description": "Red",
+	  "owner": "51bfc73c045b6e7812000002",
+	  "location": {
+	    "lat": -41.311736,
+	    "lon": 174.776634
+	  }
+	}
+
+* 400 - invalid input
+* 403 - not your account
+* 500 - server error
+
+
+### Get Resource Map Locations
+
+####Request
+
+	GET '/resources'
+	
+	eg:
+	 	/resources?lat=-41.315011&lon=174.778131&radius=800
+		/resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools
+ 		/resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools&filter=compost
+		/resources?lat=-41.315011&lon=174.778131&radius=200&filter=tools&searchterm=spade
+	
+######'lat'
+* Compulsary.
+* Latitude value.  
+
+
+######'lon'
+* Compulsary.
+* Longitude value. 
+
+
+######'radius'
+* Compulsary.
+* The radius of the search area in metres from the given location.  
+
+
+######'filter'
+* Not compulsary.
+* An array of string that match against the resources 'type' value.  
+* Case insensitive
+
+######'searchterm'
+* Not compulsary.
+* A single string to search titles by.
+* Case insensitive
+
+####Response
+
+	[
+	  {
+	    "type": "compost",
+	    "_id": "51c216a8189477500f000003",
+	    "location": {
+	      "lat": -41.315011,
+	      "lon": 174.778131
+	    }
+	  },
+	  {
+	    "type": "tools",
+	    "_id": "51c216b1189477500f000004",
+	    "location": {
+	      "lat": -41.316115,
+	      "lon": 174.778056
+	    }
+	  }
+	]
 
 
