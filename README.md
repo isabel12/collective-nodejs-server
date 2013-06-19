@@ -6,8 +6,11 @@ header based on the email and password to access all links (excluding registrati
 
 Also, for POST and PUT, make sure to include the 'Content-Type: application/json' header.
 
+
+
+## API Methods
 ###Register
-#####Request
+####Request
 	POST '/users'
 	{
 	  "email":"isabel.broomenicholson@gmail.com",
@@ -23,7 +26,23 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 	  "postcode":"6021"
 	}
 
-#####Response
+######'location'
+* 'lat' must be between -90 and 90
+* 'lon' must be between -180 and 180
+
+######'email'
+* Must match the regex /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$/
+* Is automatically decapitalised
+
+######'city'
+* Must match the regex /^[A-Za-z]{3,20}\ ?([A-Za-z]{3,20})?$/
+* Is automatically capitalised
+
+######'postcode'
+* Must match the regex /^[1-9][0-9]{3}$/
+	
+
+####Response
 * 201 - if successful (may be changed to 204 later)
 * 400 - if field falidation failed.
 * 403 - if an account already exists.
@@ -31,10 +50,10 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 
 
 ###View Profile
-#####Request
+####Request
 	GET '/user/{id}'
 	
-#####Response
+####Response
 	{
 		"postcode": "6021",
 		"points": 0,
@@ -52,11 +71,18 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 
 ###Update Profile
 
-Updates the given profile.  The JSON passed to the method can have as many or few of the required fields - the method will update
-with the ones given.  The value of each field is validated, and only the fields that are allowed to be changed will be changed; 
+Updates the given profile.  The JSON passed to the method can have as many or few of the required fields - only the fields that are allowed to be changed will be changed; 
 all other fields will be ignored.
 
-#####Request
+Fields allowed to be changed are:
+* firstName
+* lastName
+* location
+* address
+* city
+* postcode
+
+####Request
 	PUT '/user/{id}'
 	{
 	 "firstName": "Isabel",
@@ -69,8 +95,20 @@ all other fields will be ignored.
 	 	"city": "Wellington",
 		"postcode":"6021"
 	}
+
+######'location'
+* 'lat' must be between -90 and 90
+* 'lon' must be between -180 and 180
+
+######'city'
+* Must match the regex /^[A-Za-z]{3,20}\ ?([A-Za-z]{3,20})?$/
+* Is automatically capitalised
+
+######'postcode'
+* Must match the regex /^[1-9][0-9]{3}$/
+
 	
-#####Response
+####Response
 	{
 	 	"postcode": "6021",
 		"points": 0,
@@ -92,7 +130,7 @@ all other fields will be ignored.
 Adds a review from you to the user with the given {userId}, regarding the trade {tradeId}.  
 If the trade is still in progress, or you have already reviewed, you will not be able to add one.
 
-#####Request
+####Request
 
 	POST '/users/{userId}/trades/{tradeId}/reviews'
 	{
@@ -100,7 +138,7 @@ If the trade is still in progress, or you have already reviewed, you will not be
 		"message": "Awesome trade"
 	}
 
-#####Response
+####Response
 * 204 - if successful
 * 400 - if the input is not valid
 * 403 - if you are not allowed to add a review to the given trade
