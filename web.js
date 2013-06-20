@@ -6,7 +6,7 @@ var path = require("path");
 var models = require('./models');
 var jsonValidation = require('./jsonValidation');
 var User, Review, Profile, Resource, ProfileUpdate;  // mongoose schemas
-var UpdateProfileSchema, RegisterProfileSchema, FilterResourceSchema, AddResourceSchema, validateJSON;// validation schemas
+var UpdateProfileSchema, RegisterProfileSchema, FilterResourceSchema, AddResourceSchema, UpdateResourceSchema, validateJSON;// validation schemas
 
 
 // find appropriate db to connect to, default to localhost
@@ -50,6 +50,7 @@ UpdateProfileSchema = jsonValidation.UpdateProfileSchema;
 RegisterProfileSchema = jsonValidation.RegisterProfileSchema;
 FilterResourceSchema = jsonValidation.FilterResourceSchema;
 AddResourceSchema = jsonValidation.AddResourceSchema;
+UpdateResourceSchema = jsonValidation.UpdateResourceSchema;
 validateJSON = jsonValidation.validateJSON;
 
 
@@ -253,10 +254,18 @@ app.put('/users/:id', auth, function(request, response){
 
 	// tidy up input
 	var body = request.body;
-	body.city = body.city.trim().toTitleCase();
-	body.postcode = body.postcode.trim();
-	body.firstName = body.firstName.trim().capitalize();
-	body.lastName = body.lastName.trim().capitalize();
+	if(body.city){
+		body.city = body.city.trim().toTitleCase();
+	}
+	if(body.postcode){
+		body.postcode = body.postcode.trim();
+	}
+	if(body.firstName){
+		body.firstName = body.firstName.trim().capitalize();
+	}
+	if(body.lastName){
+		body.lastName = body.lastName.trim().capitalize();
+	}
 
 	// validate input
 	var validationMessage = validateJSON(body, UpdateProfileSchema);
@@ -394,11 +403,15 @@ app.post('/users/:id/image', auth, function(request, response){
 });
 
 
-// 
-
-//
-//
-//
+// {
+//   "type": "tools",
+//   "title": "Axe",
+//   "description": "Red",
+//   "location": {
+//     "lat": -41.311736,
+//     "lon": 174.776634
+//   }
+// }
 app.post('/users/:id/resources', auth, function(request, response){
 
 	// make sure the user is editing their own resource
@@ -419,12 +432,9 @@ app.post('/users/:id/resources', auth, function(request, response){
 		return;
 	}
 
-	// get location
-	var geoLoc = {type: "Point", coordinates: [request.body.location.lon, request.body.location.lat]};
-
 	// create the resource
 	var resource = new Resource(request.body);
-	resource.location = geoLoc;
+	resource.location = {type: "Point", coordinates: [request.body.location.lon, request.body.location.lat]};
 	resource.owner = request.user._id;
 
 	resource.save(function(err){
@@ -461,6 +471,141 @@ app.post('/users/:id/resources', auth, function(request, response){
 });
 
 
+// Gets all the user's resources
+app.get('/users/:userId/resources', auth, function(request, response){
+	var id = request.params.userId;
+
+	Resource.find({'owner': id}, function(err, resources){
+		if(err){
+			response.send(500);
+			return;
+		}
+
+		var results = new Array();
+		for (var i = 0; i < resources.length; i++) {
+			results[i] = resources[i].returnType;
+		};
+		response.send(JSON.stringify(results, undefined, 2));
+	});
+});
+
+
+// Gets an individual resource with all details.
+app.get('/resources/:id', auth, function(request, response){
+	var id = request.params.id;
+
+	Resource.find({'_id': id}, function(err, resources){
+		if(err){
+			response.send(500);
+			return;
+		}
+
+		var results = new Array();
+		for (var i = 0; i < resources.length; i++) {
+			results[i] = resources[i].returnType;
+		};
+
+		response.send(JSON.stringify(results, undefined, 2));
+	});
+});
+
+
+// {
+//   "type": "tools",
+//   "title": "Axe",
+//   "description": "Red",
+//   "location": {
+//     "lat": -41.311736,
+//     "lon": 174.776634
+//   }
+// }
+// updates an individual resource
+app.put('/resources/:id', auth, function(request, response){
+
+	var body = request.body;
+
+	// tidy up input
+	if(body.type){
+		body.type = body.type.toLowerCase();
+	}
+	if(body.title){
+		body.title = body.title.capitalize();
+	}
+	if(body.description){
+		body.description = body.description.capitalize();
+	}
+
+	// validate input
+	var validationMessage = validateJSON(body, UpdateResourceSchema);
+	if (validationMessage){
+		response.send(400, validationMessage);
+		return;
+	}
+
+	// form update arguments
+	var updateArguments = new Resource(body).getFieldsExcludingId();
+	updateArguments.location = {type: "Point", coordinates: [body.location.lon, body.location.lat]};
+
+
+	// update
+	Resource.update({'_id': request.params.id, 'owner': request.user._id}, updateArguments, function(err, numberAffected, raw){
+		if(!err){
+			// check the resource existed, and you own it
+			if(numberAffected == 0){
+				response.send(404, 'You do not own a resource with that id.');
+				return;
+			}
+
+			// send the updated resource back
+  			Resource.findById(request.params.id, function(err, resource){
+  				if (!err){
+					response.send(200, JSON.stringify(resource.returnType, undefined, 2));
+  				}
+  				else {
+  					response.send(500, 'An error happened with the query');  
+  				}
+  			});	
+  		} else {
+  			response.send(500, 'An error happened with the query');  
+  		}	
+	});
+});
+
+
+// deletes an individual resource
+app.del('/resources/:id', auth, function(request, response){
+	var id = request.params.id;
+
+	Resource.findById(id, function(err, resource){
+		if(err){
+			response.send(500);
+			return;
+		}
+
+		// check you could find it
+		if (!resource){
+			response.send(404, 'That resource could not be found.');
+			return;
+		}
+
+		// check you own it
+		if (resource.owner.toString() != request.user._id.toString()){
+			response.send(403, 'You can only delete a resource owned by you.' );
+			return;
+		}
+
+		// remove the resource
+		Resource.findByIdAndRemove(id, function(err){
+			if(err){
+				response.send(500);
+				return;
+			}
+
+			response.send(204, 'Resource successfully deleted.');
+		});
+	});
+});
+
 
 // GET '/resources?lat={latitude}&lon={longitude}&radius={radiusInMetres}&filter={type1}&filter={type2}&searchterm=spade'
 //
@@ -471,13 +616,13 @@ app.post('/users/:id/resources', auth, function(request, response){
 // 	searchterm = a single string to search titles by.  Not compulsary.
 //
 // Eg:
-//  /resources?lat=-41.315011&lon=174.778131&radius=800
-// 	/resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools
-//  /resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools&filter=compost
-//	/resources?lat=-41.315011&lon=174.778131&radius=200&filter=tools&searchterm=spade
+ // /resources?lat=-41.315011&lon=174.778131&radius=800
+	// /resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools
+ // /resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools&filter=compost
+	// /resources?lat=-41.315011&lon=174.778131&radius=200&filter=tools&searchterm=spade
 //
 //
-app.get('/resources', auth, function(request, response){
+app.get('/resourceLocations', auth, function(request, response){
 	// get query string parameters
 	var lat = Number(request.query.lat);
 	var lon = Number(request.query.lon);

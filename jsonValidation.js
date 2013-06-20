@@ -58,11 +58,23 @@ var addResourceSchema = {
 	"id":"/AddResource",
 	"type":"object",
 	"properties": {
-		"location":{"$ref": "/Location" },
+		"location":{"$ref": "/Location", "required": true },
 		"type": {"type": "string", "required":true},
 		"title": {"type": "string", "required":true},
 		"description": {"type": "string", "required":true},
 		"points": {"type": "number", "required":true, "minimum": 1, "maximum": 5},
+	}
+}
+
+var updateResourceSchema = {
+	"id":"/UpdateResource",
+	"type":"object",
+	"properties": {
+		"location":{"$ref": "/Location"},
+		"type": {"type": "string"},
+		"title": {"type": "string"},
+		"description": {"type": "string"},
+		"points": {"type": "number", "minimum": 1, "maximum": 5},
 	}
 }
 
@@ -75,6 +87,7 @@ function validateJSON(body, schema){
 	v.addSchema(registerProfileSchema, '/ProfileRegister');
 	v.addSchema(filterResourceSchema, '/FilterResource');
 	v.addSchema(addResourceSchema, '/AddResource');
+	v.addSchema(addResourceSchema, '/UpdateResource');
 
 	var validateResult = v.validate(body, schema);
 	if (validateResult.length){
@@ -91,5 +104,6 @@ exports.UpdateProfileSchema = updateProfileSchema;
 exports.RegisterProfileSchema = registerProfileSchema;
 exports.FilterResourceSchema = filterResourceSchema;
 exports.AddResourceSchema = addResourceSchema;
+exports.UpdateResourceSchema = updateResourceSchema;
 
 
