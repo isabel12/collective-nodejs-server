@@ -6,9 +6,22 @@ header based on the email and password to access all links (excluding registrati
 
 Also, for POST and PUT, make sure to include the 'Content-Type: application/json' header.
 
+## API Methods Currently Implemented
 
 
-## API Methods
+	POST 		'/users' 												(Register)
+	GET 		'/users/{userId}' 										(Gets a users profile)
+	PUT 		'/users/{userId}' 										(Updates the profile)
+	POST 		'/users/{userId}/trades/{tradeId}/reviews' 				(Adds a review)
+	POST 		'/users/{userId}/resources'  							(Adds a resource)
+	GET 		'/users/{userId}/resources'  							(Gets all the users listed resources)
+	GET 		'/resourceLocations'  									(Searches and filters all resource locations)
+	GET 		'/resources/{resourceId}'  								(Returns the given resource)
+	PUT 		'/resources/{resourceId}'  								(Updates the given resource)
+	DELETE 		'/resources/{resourceId}'  								(Deletes the given resource)
+
+
+## API Method Details
 ###Register
 ####Request
 	POST '/users'
@@ -197,13 +210,13 @@ If the trade is still in progress, or you have already reviewed, you will not be
 
 ####Request
 
-	GET '/resources'
+	GET '/resourceLocations'
 	
 	eg:
-	 	/resources?lat=-41.315011&lon=174.778131&radius=800
-		/resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools
- 		/resources?lat=-41.315011&lon=174.778131&radius=800&filter=tools&filter=compost
-		/resources?lat=-41.315011&lon=174.778131&radius=200&filter=tools&searchterm=spade
+	 	/resourceLocations?lat=-41.315011&lon=174.778131&radius=800
+		/resourcesLocations?lat=-41.315011&lon=174.778131&radius=800&filter=tools
+ 		/resourcesLocations?lat=-41.315011&lon=174.778131&radius=800&filter=tools&filter=compost
+		/resourceLocations?lat=-41.315011&lon=174.778131&radius=200&filter=tools&searchterm=spade
 	
 ######'lat'
 * Compulsary.
@@ -250,5 +263,61 @@ If the trade is still in progress, or you have already reviewed, you will not be
 	    }
 	  }
 	]
+
+###Get all a users Resources
+####Request
+	GET '/users/{userId}/resources'
+####Response
+* 200 OK
+* 500 - internal server error 
+
+###Get a Resource
+####Request
+	GET '/resources/{resourceId}'
+####Response
+	{
+	  "type": "tools",
+	  "_id": "51c2530cde596d3814000002",
+	  "title": "Red axe",
+	  "description": "Red axe with a nice mahogany handle",
+	  "owner": "51bfc73c045b6e7812000002",
+	  "location": {
+	    "lat": -41.311736,
+	    "lon": 174.776634
+	  }
+	}
+
+###Update a Resource
+####Request
+{
+	"title": "Red Axe"
+}
+
+####Response
+	{
+	  "type": "tools",
+	  "_id": "51c2530cde596d3814000002",
+	  "title": "Red axe",
+	  "description": "Red axe with a nice mahogany handle",
+	  "owner": "51bfc73c045b6e7812000002",
+	  "location": {
+	    "lat": -41.311736,
+	    "lon": 174.776634
+	  }
+	}
+	
+* 400 - invalid input
+* 403 - not your resource
+* 404 - couldn't find the resource
+* 500 - server error
+
+###Delete a Resource
+####Request
+	DELETE '/resources/{resourceId}'
+####Response
+* 204 - success no content
+* 403 - not your resource
+* 404 - couldn't find the resource
+* 500 - server error
 
 
