@@ -1,4 +1,4 @@
-collective-nodejs-server
+Collective Documentation
 ========================
 
 Collective uses Basic Authentication - make sure you include the Authorization 
@@ -9,6 +9,7 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 ## API Methods Currently Implemented
 
 
+	GET			'/authenticate'											(Authenticates login, returning profile)
 	POST 		'/users' 												(Register)
 	GET 		'/users/{userId}' 										(Gets a users profile)
 	PUT 		'/users/{userId}' 										(Updates the profile)
@@ -22,6 +23,27 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 
 
 ## API Method Details
+
+###Authenticate
+This method allows you to authenticate the email/password combination, and returns the user associated with it.
+
+####Request
+	GET '/authenticate'
+
+####Result
+	{
+	  "postcode": "6021",
+	  "points": 0,
+	  "lastName": "Broome-nicholson",
+	  "firstName": "Isabel",
+	  "email": "isabel.broomenicholson@gmail.com",
+	  "city": "Wellington",
+	  "address": "Wooopsdfsdfie",
+	  "_id": "51bfc73c045b6e7812000002",
+	  "reviews": []
+	}	
+* 401 - unauthorized
+
 ###Register
 ####Request
 	POST '/users'
