@@ -645,12 +645,12 @@ app.get('/resourceLocations', auth, function(request, response){
 
 	// add location to the query
 	var query = { 
-					location: { $near: 
-						{ $geometry: 
-							{  type : "Point" , 
-							   coordinates: [lon, lat] } },
-						$maxDistance : radius
-					}
+					// location: { $near: 
+					// 	{ $geometry: 
+					// 		{  type : "Point" , 
+					// 		   coordinates: [lon, lat] } },
+					// 	$maxDistance : radius
+					// }
 				};
 
 	// add filters to query
@@ -666,7 +666,7 @@ app.get('/resourceLocations', auth, function(request, response){
 
 		if(err){
 			response.send(500, err);
-			console.log(err);
+			console.log(JSON.stringify(err, undefined, 2));
 			return;
 		}
 
