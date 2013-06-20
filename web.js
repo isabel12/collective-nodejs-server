@@ -56,9 +56,6 @@ validateJSON = jsonValidation.validateJSON;
 
 // Basic Auth
 var auth = express.basicAuth(function(user, pass, callback) {
-
-	console.log('reached authentication: ' + user + ' ' + pass);
-
 	User.findOne({'email':user}, function(err, user){
 		
 		if (!err){
@@ -68,7 +65,6 @@ var auth = express.basicAuth(function(user, pass, callback) {
 				err = new Error('No user exists');
 			} else {
 				var authenticated =  user.authenticate(pass);
-				console.log('authenticated: ' + authenticated);
 
 				if (!authenticated){
 					err = new Error('Username and password do not match');
@@ -82,8 +78,6 @@ var auth = express.basicAuth(function(user, pass, callback) {
 
 // admin authentication for test methods
 var adminAuth = express.basicAuth(function(user, pass, callback) {
-
-	console.log('reached admin authentication: ' + user + ' ' + pass);
 
 	User.findOne({'email':user}, function(err, user){
 		
@@ -116,16 +110,20 @@ var errorFunction = function(err){
 	}
 };
 
-
+// root of the application
 app.get('/', function(request, response){
 	response.send('See <a href="https://github.com/isabel12/collective-nodejs-server/blob/master/README.md"> here </a> for API details');
 });
 
 
-// GET '/test'
-// An example method that uses validateSession to make sure you are logged in.
-app.get('/test', auth, function(request, response){
-	response.send("Yay, you are logged in! : " + request.user);
+
+// GET '/authenticate'
+// This method returns the 
+app.get('/authenticate', auth, function(request, response){
+	var profile = new Profile(request.user);
+	profile.rating = request.user.rating;
+
+	response.send(200, JSON.stringify(profile, undefined, 2));
 });
 
 
@@ -143,7 +141,6 @@ app.get('/test', auth, function(request, response){
 //  "city": "Wellington",
 // 	"postcode":"6021"
 // }
-
 // Allows the user to register.  
 app.post('/users', function(request, response){
 
@@ -216,7 +213,6 @@ app.get('/users/:id', auth, function(request, response){
 			var profile = new Profile(user);
 			profile.rating = user.rating;
 
-			console.log('rating: ' + user.rating);
 			response.send(JSON.stringify(profile, undefined, 2)); 		
 		}
 		else {
