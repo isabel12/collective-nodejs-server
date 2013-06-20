@@ -1,4 +1,4 @@
-collective-nodejs-server
+Collective Documentation
 ========================
 
 Collective uses Basic Authentication - make sure you include the Authorization 
