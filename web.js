@@ -665,7 +665,8 @@ app.get('/resourceLocations', auth, function(request, response){
 	Resource.find(query, 'type location _id', function(err, resources){
 
 		if(err){
-			response.send(500);
+			response.send(500, err);
+			console.log(err);
 			return;
 		}
 
