@@ -167,7 +167,7 @@ app.post('/users', function(request, response){
 	User.find({'email':request.body.email}, function (err, existingUsers) {
 		// if the query errors out
 		if (err){
-			response.send(500);
+			response.send(500, err);
 			return;
 		}
  
@@ -440,7 +440,7 @@ app.post('/users/:id/resources', auth, function(request, response){
 	resource.save(function(err){
 
 		if(err){
-			response.send(500);
+			response.send(500, err);
 			console.log(err);
 			return;
 		}
@@ -449,7 +449,7 @@ app.post('/users/:id/resources', auth, function(request, response){
 		User.findById(request.params.id, function(err, user){
 
 			if(err){
-				response.send(500);
+				response.send(500, err);
 				return;
 			}
 
@@ -459,7 +459,7 @@ app.post('/users/:id/resources', auth, function(request, response){
 			user.resources.push(resource._id);
 			user.save(function(err){
 				if(err){
-					response.send(500);
+					response.send(500, err);
 					return;
 				}
 
@@ -521,7 +521,6 @@ app.get('/resources/:id', auth, function(request, response){
 // }
 // updates an individual resource
 app.put('/resources/:id', auth, function(request, response){
-
 	var body = request.body;
 
 	// tidy up input
