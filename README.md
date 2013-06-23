@@ -8,7 +8,7 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 
 ## API Methods Currently Implemented
 
-	GET			'/'														(links to this page)
+	GET		'/'														(links to this page)
 	POST*		'/authenticate'											(Authenticates login, returning profile)
 	POST 		'/register' 											(Register)
 	POST*		'/getProfile/{userId}' 									(Gets a users profile)
@@ -20,7 +20,12 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 	POST* 		'/getResource/{resourceId}'  							(Returns the given resource)
 	POST* 		'/updateResource/{resourceId}'  						(Updates the given resource)
 	POST*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
-
+	POST*		'/addTrade'									(Requests a new trade)
+	POST**		'/getTrades'									(test method for getting all active trades)
+	POST*		'/trades/{tradeId}/Actions?action=add_message'
+	POST*		'/trades/{tradeId}/Actions?action=accept'
+	POST*		'/trades/{tradeId}/Actions?action=decline'
+	
 	* requires 'Autheorization' headers
 
 ## API Method Details
@@ -344,5 +349,113 @@ If the trade is still in progress, or you have already reviewed, you will not be
 * 403 - not your resource
 * 404 - couldn't find the resource
 * 500 - server error
+
+
+###Request a Trade
+####Request
+	POST '/addTrade'
+	{
+		"resourceId": "51c536476f2b4a7016000005"
+	}
+	
+####Response
+	{
+	  "resourceId": "51c67561f23f86ac12000002",
+	  "id": "51c6d48b27b136c819000002",
+	  "borrower": {
+	    "userId": "51c535916f2b4a7016000002",
+	    "lastName": "Broome-nicholson",
+	    "firstName": "Isabel"
+	  },
+	  "state": "p_accepted",
+	  "ownerActions": [
+	    "accept",
+	    "decline",
+	    "add_message"
+	  ],
+	  "borrowerActions": [
+	    "add_message"
+	  ],
+	  "messages": []
+	}
+
+	
+###Add a message to a Trade
+####Request
+
+	POST '/trades/{tradeId}/Actions?action=add_message'
+	{
+		"message": "Hey yeah thats fine.  See you then!"
+	}
+
+####Response
+
+	{
+	  "date": "2013-06-23T11:01:26.967Z",
+	  "message": "Hey yeah thats fine.  See you then!",
+	  "_id": "51c6d58627b136c819000003",
+	  "sender": {
+	    "firstName": "Isabel",
+	    "lastName": "Broome-nicholson",
+	    "userId": "51c535916f2b4a7016000002"
+	  }
+	}
+	
+* 403 - if not allowed to do that action.
+
+###Accept Trade
+####Request
+
+	POST '/trades/{tradeId}/Actions?action=accept'
+	
+####Response
+	{
+	  "resourceId": "51c67561f23f86ac12000002",
+	  "id": "51c6d48b27b136c819000002",
+	  "borrower": {
+	    "userId": "51c535916f2b4a7016000002",
+	    "lastName": "Broome-nicholson",
+	    "firstName": "Isabel"
+	  },
+	  "state": "accepted",
+	  "ownerActions": [
+	    "accept",
+	    "decline",
+	    "add_message"
+	  ],
+	  "borrowerActions": [
+	    "add_message"
+	  ],
+	  "messages": []
+	}
+
+* 403 - if not allowed to do that action.
+
+###Decline Trade
+####Request
+
+	POST '/trades/{tradeId}/Actions?action=decline'
+	
+####Response
+	{
+	  "resourceId": "51c67561f23f86ac12000002",
+	  "id": "51c6d48b27b136c819000002",
+	  "borrower": {
+	    "userId": "51c535916f2b4a7016000002",
+	    "lastName": "Broome-nicholson",
+	    "firstName": "Isabel"
+	  },
+	  "state": "declined",
+	  "ownerActions": [
+	  ],
+	  "borrowerActions": [
+	  ],
+	  "messages": []
+	}
+
+* 403 - if not allowed to do that action.
+
+
+
 
 
