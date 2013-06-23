@@ -117,6 +117,7 @@ Fields allowed to be changed are:
 * address
 * city
 * postcode
+* password
 
 ####Request
 	PUT '/user/{id}'
@@ -129,7 +130,8 @@ Fields allowed to be changed are:
 		},
 		"address": "Cool place on the hill",
 	 	"city": "Wellington",
-		"postcode":"6021"
+		"postcode":"6021",
+		"password": "bunnies"
 	}
 
 ######'location'
