@@ -4,8 +4,9 @@ var fs = require("fs");
 var path = require("path");
 
 var models = require('./models');
+var tradeLogic = require('./tradeLogic');
 var jsonValidation = require('./jsonValidation');
-var User, Review, Profile, Resource, ProfileUpdate;  // mongoose schemas
+var User, Review, Profile, Resource, Trade, Message, ProfileUpdate;  // mongoose schemas
 var UpdateProfileSchema, RegisterProfileSchema, FilterResourceSchema, AddResourceSchema, UpdateResourceSchema, validateJSON;// validation schemas
 
 
@@ -43,6 +44,8 @@ models.defineModels(mongoose, function() {
 	Review = mongoose.model('Review');
 	ProfileUpdate = mongoose.model('ProfileUpdate');
 	Resource = mongoose.model('Resource');
+	Trade = mongoose.model('Trade');
+	Message = mongoose.model('Message');
 })
 
 // import the validation schemas
@@ -79,8 +82,12 @@ var auth = express.basicAuth(function(user, pass, callback) {
 // admin authentication for test methods
 var adminAuth = express.basicAuth(function(user, pass, callback) {
 
-	User.findOne({'email':user}, function(err, user){
-		
+	if(user != 'isabel.broomenicholson@gmail.com'){
+		callback(new Error('Not authorized.'), null);
+		return;
+	}
+
+	User.findOne({'email':user}, function(err, user){		
 		if (!err){
 
 			if (!user){
@@ -88,7 +95,6 @@ var adminAuth = express.basicAuth(function(user, pass, callback) {
 				err = new Error('No user exists');
 			} else {
 				var authenticated =  user.authenticate(pass);
-				console.log('authenticated: ' + authenticated);
 
 				if (!authenticated){
 					err = new Error('Username and password do not match');
@@ -119,7 +125,7 @@ app.get('/', function(request, response){
 
 // GET '/authenticate'
 // This method returns the 
-app.get('/authenticate', auth, function(request, response){
+app.post('/authenticate', auth, function(request, response){
 	var profile = new Profile(request.user);
 	profile.rating = request.user.rating;
 
@@ -189,7 +195,7 @@ app.post('/users', function(request, response){
 
 	  	// send the new user
 	  	response.send(201, profile);
-	  });
+	});
 });
 
 
@@ -198,7 +204,7 @@ app.post('/users', function(request, response){
 
 // GET '/user/{id}'
 // Returns the profile of the user with the given id.
-app.get('/users/:id', auth, function(request, response){
+app.post('/users/:id', auth, function(request, response){
 
 	// find the user
 	var query = User.findById(request.params.id, function(err, user) {
@@ -241,7 +247,7 @@ app.get('/users/:id', auth, function(request, response){
 // all other fields will be ignored.
 //
 //
-app.put('/users/:id', auth, function(request, response){
+app.post('/users/:id', auth, function(request, response){
 	// check it is your profile
 	if (request.params.id != request.user._id){
 		response.send(403, "You cannot edit a profile that is not yours.");
@@ -348,7 +354,7 @@ app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, respo
 
 // GET '/users'
 // Returns all users.  Test method
-app.get('/users', adminAuth, function(request, response) {
+app.post('/users', adminAuth, function(request, response) {
 
 	// make a query to find some users
 	var query = User.find(function(err, result) {
@@ -360,13 +366,6 @@ app.get('/users', adminAuth, function(request, response) {
 		}
 	});
 });
-
-
-app.listen(port, function() {
-	console.log("Listening on " + port);
-});
-
-
 
 
 // method to upload a profile image
@@ -406,7 +405,8 @@ app.post('/users/:id/image', auth, function(request, response){
 //   "location": {
 //     "lat": -41.311736,
 //     "lon": 174.776634
-//   }
+//   },
+// 	 "points":2
 // }
 app.post('/users/:id/resources', auth, function(request, response){
 
@@ -441,34 +441,13 @@ app.post('/users/:id/resources', auth, function(request, response){
 			return;
 		}
 
-		// find user
-		User.findById(request.params.id, function(err, user){
-
-			if(err){
-				response.send(500, err);
-				return;
-			}
-
-			// note: not necessary to check user not null - auth already does it.
-
-			// add resource to users account
-			user.resources.push(resource._id);
-			user.save(function(err){
-				if(err){
-					response.send(500, err);
-					return;
-				}
-
-				response.send(201, JSON.stringify(resource.returnType, undefined, 2));
-			});
-
-		});
+		response.send(201, JSON.stringify(resource.returnType, undefined, 2));
 	});
 });
 
 
 // Gets all the user's resources
-app.get('/users/:userId/resources', auth, function(request, response){
+app.post('/users/:userId/resources', auth, function(request, response){
 	var id = request.params.userId;
 
 	Resource.find({'owner': id}, function(err, resources){
@@ -487,7 +466,7 @@ app.get('/users/:userId/resources', auth, function(request, response){
 
 
 // Gets an individual resource with all details.
-app.get('/resources/:id', auth, function(request, response){
+app.post('/resources/:id', auth, function(request, response){
 	var id = request.params.id;
 
 	Resource.find({'_id': id}, function(err, resources){
@@ -516,7 +495,7 @@ app.get('/resources/:id', auth, function(request, response){
 //   }
 // }
 // updates an individual resource
-app.put('/resources/:id', auth, function(request, response){
+app.post('/resources/:id', auth, function(request, response){
 	var body = request.body;
 
 	// tidy up input
@@ -568,7 +547,7 @@ app.put('/resources/:id', auth, function(request, response){
 
 
 // deletes an individual resource
-app.del('/resources/:id', auth, function(request, response){
+app.post('/resources/:id', auth, function(request, response){
 	var id = request.params.id;
 
 	Resource.findById(id, function(err, resource){
@@ -617,7 +596,7 @@ app.del('/resources/:id', auth, function(request, response){
 	// /resources?lat=-41.315011&lon=174.778131&radius=200&filter=tools&searchterm=spade
 //
 //
-app.get('/resourceLocations', auth, function(request, response){
+app.post('/resourceLocations', auth, function(request, response){
 	// get query string parameters
 	var lat = Number(request.query.lat);
 	var lon = Number(request.query.lon);
@@ -625,11 +604,15 @@ app.get('/resourceLocations', auth, function(request, response){
 	var filters = typeof request.query.filter=="string"? new Array(request.query.filter) : request.query.filter; // put in array if single item
 	var searchTerm = request.query.searchterm;
 
+	console.log(JSON.stringify(request.query));
+
 	// convert
 	request.query.lat = lat;
 	request.query.lon = lon;
 	request.query.radius = radius;
 	request.query.filter = filters;
+
+	console.log(JSON.stringify(request.query));
 
 	// validate input
 	var validationMessage = validateJSON(request.query, FilterResourceSchema);
@@ -677,6 +660,353 @@ app.get('/resourceLocations', auth, function(request, response){
 });
 
 
+// {
+// 	  'resourceId': "51c536476f2b4a7016000005",
+// }
+app.post('/trades', auth, function(request, response){
+
+	var resourceId = request.body.resourceId;
+	var me = request.user;
+
+	console.log('got here');
+
+	// validate input
+	try{
+		mongoose.Types.ObjectId(resourceId);
+	} catch(e){
+		response.send(400, 'Invalid resourceId.');
+		return;
+	}
+
+	// get resource
+	Resource.findById(request.body.resourceId)
+	.populate('owner', 'firstName lastName')
+	.exec(function(err, resource){
+		if(err){
+			response.send(500, err);
+			console.log(JSON.stringify(err, undefined, 2));
+			throw err;
+		}
+
+		// check resource exists
+		if(!resource){
+			response.send(404, 'Resource could not be found.');
+			return;
+		}
+
+		// check you aren't the owner
+		if(resource && resource.owner.toString() == me._id.toString()){
+			response.send(403, 'You cannot borrow your own resource.');
+			return;
+		}
+
+		// check you are not borrowing it currently
+		var queryParams = {'resource': mongoose.Types.ObjectId(resourceId), 'borrower.userId': me._id};
+		Trade.findOne(queryParams, function(err, existingTrade){
+			if(err){
+				response.send(500, err);
+				console.log(JSON.stringify(err, undefined, 2));
+				return;
+			}
+
+			if(existingTrade){
+				response.send(403, 'You are already borrowing that resource: ' + JSON.stringify(existingTrade));
+				return;
+			}
+
+			// create the new trade
+			var newTrade = new Trade({
+				'resource': resource._id, 
+				'borrower': {'firstName': me.firstName, 'lastName': me.lastName, 'userId': me._id},
+				'owner': {'firstName': resource.owner.firstName, 'lastName': resource.owner.lastName, 'userId': resource.owner._id},
+				'state': tradeLogic.states.PENDING_ACCEPTED });
+
+			// save the new trade
+			newTrade.save(function(err){
+				if(err){
+					response.send(500, err);
+					console.log(JSON.stringify(err, undefined, 2));
+					return;
+				}	
+
+				// send the trade back
+				var result = JSON.stringify(newTrade.returnType, undefined, 2);
+				console.log(result)
+				response.send(result);
+			});
+		});
+	});
+});
+
+
+
+app.post('/trades', adminAuth, function(request, response){
+	
+	Trade.find(function(err, trades){
+		if(err){
+			console.log(JSON.stringify(err, undefined, 2));
+			response.send(500, JSON.stringify(err, undefined, 2));
+			return;
+		}	
+
+		var result = new Array();
+		for (var i = 0; i < trades.length; i++) {
+			result[i] = trades[i].returnType;
+		};
+
+
+		response.send(JSON.stringify(result, undefined, 2));
+	});
+
+});
+
+
+
+
+//
+//{
+//	"message": "Hey yeah thats fine.  See you then!"
+//}
+//
+app.post('/trades/:tradeId/Actions', auth, function(request, response){
+	var tradeId = request.params.tradeId;
+	var action = request.query.action;
+	
+	// check the action is valid
+	if(!tradeLogic.isValidAction(action)){
+		response.send(400, 'Action is invalid. It must be contained in: ' + tradeLogic.actions);
+	}
+
+
+	// find the trade
+	Trade.findById(tradeId)
+	.populate('resource', 'points')
+	.exec(function(err, trade){
+		if(err){
+			throw err;
+			return;
+		}	
+
+		// check the trade exists
+		if(!trade){
+			console.log('trade doesn\'t exist');
+			response.send(404);
+			return;
+		}
+
+		// check the user is allowed to do the action
+		if(!trade.canDoAction(request.user._id, action)){
+			response.send(403, 'You are not authorised to do that action: ' + action);
+			return;
+		}
+
+		// perform the action
+		switch(action){
+			case tradeLogic.actions.ADD_MESSAGE:
+				addMessage(request, response, trade);
+				break;
+			case tradeLogic.actions.ACCEPT:
+				accept(request, response, trade);
+				break;
+			case tradeLogic.actions.AGREE:
+				if(trade.state == tradeLogic.states.PENDING_COMPLETE_BORROWER || trade.state == tradeLogic.states.PENDING_COMPLETE_OWNER){
+					transferPoints(request, response, trade, tradeLogic.actions.COMPLETE);
+				} 
+				// todo, if state is ACCEPTED
+				break;
+			default:
+				response.send(500, 'Action is not yet supported.');
+		}
+
+	});
+});
+
+
+
+
+
+var addMessage = function(request, response, trade){
+	var message = new Message({
+		'sender':{'firstName':request.user.firstName, 'lastName':request.user.lastName, 'userId': request.user._id}, 
+		'date': new Date(), 
+		'message': request.body.message});
+
+	trade.messages.push(message);
+	trade.save(function(err){
+		if(err){
+			throw err;
+			return;
+		}
+	});
+
+	response.send(200, JSON.stringify(message, undefined, 2));
+};
+
+var accept = function(request, response, trade){
+	trade.state = tradeLogic.states.ACCEPTED;
+	trade.save(function(err){
+		if(err){
+			response.send(500, err);
+			console.log(JSON.stringify(err, undefined, 2));
+			return;
+		}
+	});
+
+	response.send(200, JSON.stringify(trade.returnType, undefined, 2));
+};
+
+
+var decline = function(request, response, trade){
+	trade.state = tradeLogic.states.DECLINED;
+	trade.save(function(err){
+		if(err){
+			response.send(500, err);
+			console.log(JSON.stringify(err, undefined, 2));
+			return;
+		}
+	});
+
+	response.send(200, JSON.stringify(trade.returnType, undefined, 2));
+};
+
+
+var cancel = function(request, response, trade){
+
+
+};
+
+
+var transferPoints = function(request, response, trade, desiredState){
+
+	console.log('transferring points');
+	
+	var errorState = '';
+	var previousState = trade.state;
+
+	// mark trade as processing
+	var shouldReturn = false;
+	trade.state = tradeLogic.states.PROCESSING;
+	trade.save(function(err){
+		if(err){
+			response.send(500, err);
+			console.log(JSON.stringify(err, undefined, 2));
+			shouldReturn = true;
+		}
+	});
+	if(shouldReturn){
+		return;
+	}
+
+
+	// transfer the points from the owner
+	console.log(trade.ownerId);
+	console.log(JSON.stringify(trade, undefined, 2));
+	User.findById(trade.ownerId, function(err, owner){
+
+		if(err){
+			errorState = 'Points transfer failed, need to reverse state back to ' + previousState;
+			console.log(errorState);
+			console.log(JSON.stringify(err, undefined, 2));	
+			return;
+		}
+
+		if(!owner){
+			errorState = 'Points transfer failed, need to reverse state back to ' + previousState;
+			console.log(errorState);
+			console.log('Owner could not be found.');
+			return;
+		}
+
+		console.log(owner);
+		console.log(trade);
+
+		owner.points = owner.points + trade.resource.points;
+		owner.save(function(err){
+			if(err){
+				errorState = 'Points transfer failed, need to reverse state back to ' + previousState;
+				console.log(errorState);
+				console.log(JSON.stringify(err, undefined, 2));
+				return;
+			}
+
+			// transfer points from borrower
+			User.findById(trade.borrowerId, function(err, borrower){
+
+				// attempt the transfer
+				var borrowerTransferSuccessful;
+				if(!err && borrower){
+					borrower.points = borrower.points - trade.resource.points;
+					borrower.save(function(err){
+						if(!err){
+							borrowerTransferSuccessful = true;
+						}
+					});
+				}
+
+				// if error, reverse everything
+				if(err || !borrower || !borrowerTransferSuccessful){
+					errorState += 'Transfer from borrower failed.  Need to reverse owner points transfer.';
+					console.log(errorState);
+					console.log(err);
+
+					// try reverse the owner points
+					owner.points = owner.points - trade.points;
+					owner.save(function(err){
+						if(err){
+							console.log(JSON.stringify(err, undefined, 2));
+							return;
+						}
+
+						// reversal successful, return 500 error
+						errorState = '';
+						response.send(500, 'Changing state to complete failed.  Not to worry; everything was reversed correctly.');
+					});
+					return;  // definitely don't want anything else happening after this except checking for error state;
+				}
+
+
+				// yay successful, change state to complete
+				trade.state = desiredState;
+				trade.save(function(err){
+					if(err){
+						errorState = 'Points successfully transferred, but error changing trade state to ' + desiredState;
+						console.log(errorState);
+						console.log(JSON.stringify(err, undefined, 2));
+						return;
+					}
+
+					// yay successful, remove any error state messages
+					errorState = '';
+					response.send(200, trade.returnType);
+
+				});
+			});
+		});
+	});
+
+	// check for illegal state
+	if(errorState != ''){
+		response.send(500, 'Oh no, something went wrong, and trade is in an illegal state.  We are working on it!');
+		throw new Error('Illegal state: ' + errorState);
+	}
+};
+
+
+var markAsCancelled = function(request, response, trade){
+
+
+};
+
+
+var markAsComplete = function(request, response, trade){
+
+
+};
+
+
+app.listen(port, function() {
+	console.log("Listening on " + port);
+});
 
 
 //-------------------------------------------------------------------------------

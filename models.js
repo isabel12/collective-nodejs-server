@@ -1,5 +1,5 @@
 var crypto = require('crypto');
-
+var tradeLogic = require('./tradeLogic');
 
 
 function defineModels(mongoose, fn) {
@@ -10,6 +10,17 @@ function defineModels(mongoose, fn) {
   // A function used by string fields that are required    
   function validatePresenceOf(value) {
     return value && value.length;
+  }
+
+  function validState(value){
+
+    for (var i = 0; i < states.length; i++) {
+      if(states[i] == value.trim().toLowerCase()){
+        return true;
+      }
+    };
+
+    return false;
   }
 
   //================================================================================================================
@@ -63,7 +74,8 @@ function defineModels(mongoose, fn) {
     'title': String,
     'description': String,
     'location': {type: Object, index: { type: '2dsphere', sparse: true }},
-    'owner': {type: Schema.Types.ObjectId, ref: 'User'}
+    'owner': {type: Schema.Types.ObjectId, ref: 'User'},
+    'points': Number
   });
 
 
@@ -82,16 +94,87 @@ function defineModels(mongoose, fn) {
     .get(function(){
       var value = {
         type: this.type, 
-        _id:this._id, 
+        id:this._id, 
         title: this.title,
         description: this.description,
         owner: this.owner,
-        location: {lat: this.location.coordinates[1], lon: this.location.coordinates[0]}
+        location: {lat: this.location.coordinates[1], lon: this.location.coordinates[0]},
+        points: this.points
       };
 
       return value;
     });
 
+
+
+  /**
+    * Model: Trade
+    */
+  var TradeSchema = new Schema({
+    'resource': {type: Schema.Types.ObjectId, ref: 'Resource', index: true},
+    'borrower': {'firstName':String, 'lastName':String, 'userId': Schema.Types.ObjectId},
+    'owner': {'firstName':String, 'lastName':String, 'userId': Schema.Types.ObjectId},
+    'messages': [MessageSchema],
+    'state': String,
+    'ownerReviewed': Boolean,
+    'borrowerReviewed': Boolean
+  });
+
+
+  TradeSchema.virtual('borrowerId')
+    .get(function(){
+      return this.borrower.userId;
+    });
+
+  TradeSchema.virtual('ownerId')
+    .get(function(){
+      return this.owner.userId;
+    });
+
+
+  TradeSchema.method('canDoAction', function(userId, action){
+    if(userId.equals(this.borrower.userId)){
+      console.log("is borrower");
+      return tradeLogic.getBorrowerActions(this.state, this.borrowerReviewed).indexOf(action) > -1;
+    } else if (userId.equals(this.owner.userId)){
+      return tradeLogic.getOwnerActions(this.state, this.ownerReviewed).indexOf(action) > -1;
+    }
+    return false;
+  });
+
+
+  TradeSchema.virtual('ownerActions')
+    .get(function(){
+      return tradeLogic.getOwnerActions(this.state, this.ownerReviewed);
+    });
+
+
+  TradeSchema.virtual('borrowerActions')
+    .get(function(){
+      return tradeLogic.getBorrowerActions(this.state, this.borrowerReviewed);
+    });
+
+  TradeSchema.virtual('returnType')
+    .get(function(){
+      return {
+        resourceId: this.resource,
+        id: this._id,
+        borrower: this.borrower,
+        state: this.state,
+        ownerActions : this.ownerActions,
+        borrowerActions : this.borrowerActions,
+        messages: this.messages
+      };
+    });
+
+  /**
+    * Model: Message
+    */
+  var MessageSchema = new Schema({
+    'sender': {'firstName':String, 'lastName':String, 'userId': Schema.Types.ObjectId},
+    'date': Date,
+    'message': String
+  });
 
 
   /**
@@ -162,6 +245,8 @@ function defineModels(mongoose, fn) {
   mongoose.model('RTProfile', RTProfileSchema);
   mongoose.model('ProfileUpdate', ProfileUpdateSchema);
   mongoose.model('Resource', ResourceSchema);
+  mongoose.model('Trade', TradeSchema);
+  mongoose.model('Message', MessageSchema);
 
   // callback 
   fn();
@@ -169,3 +254,5 @@ function defineModels(mongoose, fn) {
 
 // declare the defineModels method as accessible as a library function
 exports.defineModels = defineModels; 
+
+
