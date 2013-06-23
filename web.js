@@ -148,7 +148,7 @@ app.post('/authenticate', auth, function(request, response){
 // 	"postcode":"6021"
 // }
 // Allows the user to register.  
-app.post('/users', function(request, response){
+app.post('/register', function(request, response){
 
 	// tidy up input
 	var body = request.body;
@@ -204,7 +204,7 @@ app.post('/users', function(request, response){
 
 // GET '/user/{id}'
 // Returns the profile of the user with the given id.
-app.post('/users/:id', auth, function(request, response){
+app.post('/getProfile/:id', auth, function(request, response){
 
 	// find the user
 	var query = User.findById(request.params.id, function(err, user) {
@@ -247,7 +247,7 @@ app.post('/users/:id', auth, function(request, response){
 // all other fields will be ignored.
 //
 //
-app.post('/users/:id', auth, function(request, response){
+app.post('/updateProfile/:id', auth, function(request, response){
 	// check it is your profile
 	if (request.params.id != request.user._id){
 		response.send(403, "You cannot edit a profile that is not yours.");
@@ -354,7 +354,7 @@ app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, respo
 
 // GET '/users'
 // Returns all users.  Test method
-app.post('/users', adminAuth, function(request, response) {
+app.get('/users', adminAuth, function(request, response) {
 
 	// make a query to find some users
 	var query = User.find(function(err, result) {
@@ -369,7 +369,7 @@ app.post('/users', adminAuth, function(request, response) {
 
 
 // method to upload a profile image
-app.post('/users/:id/image', auth, function(request, response){
+app.post('/users/:id/uploadimage', auth, function(request, response){
 	var tempPath = request.files.file.path;
 	var targetPath = path.resolve('./images/users/profile/' + body.params.id + '.png');
 
@@ -408,7 +408,7 @@ app.post('/users/:id/image', auth, function(request, response){
 //   },
 // 	 "points":2
 // }
-app.post('/users/:id/resources', auth, function(request, response){
+app.post('/users/:id/addResource', auth, function(request, response){
 
 	// make sure the user is editing their own resource
 	if(request.user._id != request.params.id){
@@ -447,7 +447,7 @@ app.post('/users/:id/resources', auth, function(request, response){
 
 
 // Gets all the user's resources
-app.post('/users/:userId/resources', auth, function(request, response){
+app.post('/users/:userId/getResources', auth, function(request, response){
 	var id = request.params.userId;
 
 	Resource.find({'owner': id}, function(err, resources){
@@ -466,7 +466,7 @@ app.post('/users/:userId/resources', auth, function(request, response){
 
 
 // Gets an individual resource with all details.
-app.post('/resources/:id', auth, function(request, response){
+app.post('/getResource/:id', auth, function(request, response){
 	var id = request.params.id;
 
 	Resource.find({'_id': id}, function(err, resources){
@@ -495,7 +495,7 @@ app.post('/resources/:id', auth, function(request, response){
 //   }
 // }
 // updates an individual resource
-app.post('/resources/:id', auth, function(request, response){
+app.post('/updateResource/:id', auth, function(request, response){
 	var body = request.body;
 
 	// tidy up input
@@ -547,7 +547,7 @@ app.post('/resources/:id', auth, function(request, response){
 
 
 // deletes an individual resource
-app.post('/resources/:id', auth, function(request, response){
+app.post('/deleteResource/:id', auth, function(request, response){
 	var id = request.params.id;
 
 	Resource.findById(id, function(err, resource){
@@ -596,7 +596,7 @@ app.post('/resources/:id', auth, function(request, response){
 	// /resources?lat=-41.315011&lon=174.778131&radius=200&filter=tools&searchterm=spade
 //
 //
-app.post('/resourceLocations', auth, function(request, response){
+app.post('/getResourceLocations', auth, function(request, response){
 	// get query string parameters
 	var lat = Number(request.query.lat);
 	var lon = Number(request.query.lon);
@@ -663,7 +663,7 @@ app.post('/resourceLocations', auth, function(request, response){
 // {
 // 	  'resourceId': "51c536476f2b4a7016000005",
 // }
-app.post('/trades', auth, function(request, response){
+app.post('/addTrade', auth, function(request, response){
 
 	var resourceId = request.body.resourceId;
 	var me = request.user;
@@ -740,7 +740,7 @@ app.post('/trades', auth, function(request, response){
 
 
 
-app.post('/trades', adminAuth, function(request, response){
+app.post('/getTrades', adminAuth, function(request, response){
 	
 	Trade.find(function(err, trades){
 		if(err){
