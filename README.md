@@ -9,17 +9,17 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 ## API Methods Currently Implemented
 
 	GET			'/'														(links to this page)
-	GET*		'/authenticate'											(Authenticates login, returning profile)
+	POST*		'/authenticate'											(Authenticates login, returning profile)
 	POST 		'/register' 											(Register)
-	GET* 		'/getProfile/{userId}' 									(Gets a users profile)
-	PUT* 		'/updateProfile/{userId}' 								(Updates the profile)
+	POST*		'/getProfile/{userId}' 									(Gets a users profile)
+	POST*		'/updateProfile/{userId}' 								(Updates the profile)
 	POST* 		'/users/{userId}/trades/{tradeId}/reviews' 				(Adds a review)
 	POST* 		'/users/{userId}/addResource'  							(Adds a resource)
-	GET* 		'/users/{userId}/getResources'  						(Gets all the users listed resources)
-	GET* 		'/getResourceLocations'  								(Searches and filters all resource locations)
-	GET* 		'/getResource/{resourceId}'  							(Returns the given resource)
-	PUT* 		'/updateResource/{resourceId}'  						(Updates the given resource)
-	DELETE*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
+	POST* 		'/users/{userId}/getResources'  						(Gets all the users listed resources)
+	POST* 		'/getResourceLocations'  								(Searches and filters all resource locations)
+	POST* 		'/getResource/{resourceId}'  							(Returns the given resource)
+	POST* 		'/updateResource/{resourceId}'  						(Updates the given resource)
+	POST*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
 
 	* requires 'Autheorization' headers
 
