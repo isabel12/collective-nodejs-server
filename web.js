@@ -60,9 +60,7 @@ validateJSON = jsonValidation.validateJSON;
 // Basic Auth
 var auth = express.basicAuth(function(user, pass, callback) {
 	User.findOne({'email':user}, function(err, user){
-		
 		if (!err){
-
 			if (!user){
 				console.log('No user exists');
 				err = new Error('No user exists');
@@ -72,10 +70,9 @@ var auth = express.basicAuth(function(user, pass, callback) {
 				if (!authenticated){
 					err = new Error('Username and password do not match');
 				}
-
-				callback(err, user);
 			}
-		}		
+		}
+		callback(err, user);		
 	}); 
 });
 
@@ -87,9 +84,8 @@ var adminAuth = express.basicAuth(function(user, pass, callback) {
 		return;
 	}
 
-	User.findOne({'email':user}, function(err, user){		
+	User.findOne({'email':user}, function(err, user){
 		if (!err){
-
 			if (!user){
 				console.log('No user exists');
 				err = new Error('No user exists');
@@ -99,10 +95,9 @@ var adminAuth = express.basicAuth(function(user, pass, callback) {
 				if (!authenticated){
 					err = new Error('Username and password do not match');
 				}
-
-				callback(err, user);
 			}
-		}		
+		}
+		callback(err, user);		
 	}); 
 });
 
