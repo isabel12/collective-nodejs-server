@@ -349,7 +349,7 @@ app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, respo
 
 // GET '/users'
 // Returns all users.  Test method
-app.get('/users', adminAuth, function(request, response) {
+app.get('/users', auth, function(request, response) {
 
 	// make a query to find some users
 	var query = User.find(function(err, result) {
@@ -656,7 +656,7 @@ app.post('/getResourceLocations', auth, function(request, response){
 
 
 // {
-// 	  'resourceId': "51c536476f2b4a7016000005",
+// 	  'resourceId': "51c536476f2b4a7016000005"
 // }
 app.post('/addTrade', auth, function(request, response){
 
@@ -735,7 +735,7 @@ app.post('/addTrade', auth, function(request, response){
 
 
 
-app.post('/getTrades', adminAuth, function(request, response){
+app.post('/getTrades', auth, function(request, response){
 	
 	Trade.find(function(err, trades){
 		if(err){
@@ -756,12 +756,10 @@ app.post('/getTrades', adminAuth, function(request, response){
 });
 
 
-
-
 //
-//{
-//	"message": "Hey yeah thats fine.  See you then!"
-//}
+// {
+// 	"message": "Hey yeah thats fine.  See you then!"
+// }
 //
 app.post('/trades/:tradeId/Actions', auth, function(request, response){
 	var tradeId = request.params.tradeId;
@@ -771,7 +769,6 @@ app.post('/trades/:tradeId/Actions', auth, function(request, response){
 	if(!tradeLogic.isValidAction(action)){
 		response.send(400, 'Action is invalid. It must be contained in: ' + tradeLogic.actions);
 	}
-
 
 	// find the trade
 	Trade.findById(tradeId)
@@ -804,20 +801,22 @@ app.post('/trades/:tradeId/Actions', auth, function(request, response){
 				accept(request, response, trade);
 				break;
 			case tradeLogic.actions.AGREE:
-				if(trade.state == tradeLogic.states.PENDING_COMPLETE_BORROWER || trade.state == tradeLogic.states.PENDING_COMPLETE_OWNER){
-					transferPoints(request, response, trade, tradeLogic.actions.COMPLETE);
-				} 
-				// todo, if state is ACCEPTED
+				agree(request, response, trade);
 				break;
+			case tradeLogic.actions.DISAGREE:
+				disagree(request, response, trade);
+				break;
+			case tradeLogic.actions.MARK_AS_COMPLETE:
+				markAsComplete(request, response, trade);
+				break;
+			case tradeLogic.actions.CANCEL:
+				cancel(request, response, trade);
+				break;		
 			default:
 				response.send(500, 'Action is not yet supported.');
 		}
-
 	});
 });
-
-
-
 
 
 var addMessage = function(request, response, trade){
@@ -836,6 +835,7 @@ var addMessage = function(request, response, trade){
 
 	response.send(200, JSON.stringify(message, undefined, 2));
 };
+
 
 var accept = function(request, response, trade){
 	trade.state = tradeLogic.states.ACCEPTED;
@@ -866,137 +866,200 @@ var decline = function(request, response, trade){
 
 
 var cancel = function(request, response, trade){
+	var userId = request.user._id;
 
+	if(trade.isBorrower(userId)){
+		// change state
+		trade.state = tradeLogic.states.PENDING_CANCELLED;
+	}
 
-};
+	else if (trade.isOwner(userId)){
+		// change state
+		trade.state = tradeLogic.states.CANCELLED;
+	}
 
-
-var transferPoints = function(request, response, trade, desiredState){
-
-	console.log('transferring points');
-	
-	var errorState = '';
-	var previousState = trade.state;
-
-	// mark trade as processing
-	var shouldReturn = false;
-	trade.state = tradeLogic.states.PROCESSING;
+	// save the change
 	trade.save(function(err){
 		if(err){
 			response.send(500, err);
 			console.log(JSON.stringify(err, undefined, 2));
-			shouldReturn = true;
-		}
-	});
-	if(shouldReturn){
-		return;
-	}
-
-
-	// transfer the points from the owner
-	console.log(trade.ownerId);
-	console.log(JSON.stringify(trade, undefined, 2));
-	User.findById(trade.ownerId, function(err, owner){
-
-		if(err){
-			errorState = 'Points transfer failed, need to reverse state back to ' + previousState;
-			console.log(errorState);
-			console.log(JSON.stringify(err, undefined, 2));	
 			return;
 		}
 
-		if(!owner){
-			errorState = 'Points transfer failed, need to reverse state back to ' + previousState;
-			console.log(errorState);
-			console.log('Owner could not be found.');
-			return;
-		}
-
-		console.log(owner);
-		console.log(trade);
-
-		owner.points = owner.points + trade.resource.points;
-		owner.save(function(err){
-			if(err){
-				errorState = 'Points transfer failed, need to reverse state back to ' + previousState;
-				console.log(errorState);
-				console.log(JSON.stringify(err, undefined, 2));
-				return;
-			}
-
-			// transfer points from borrower
-			User.findById(trade.borrowerId, function(err, borrower){
-
-				// attempt the transfer
-				var borrowerTransferSuccessful;
-				if(!err && borrower){
-					borrower.points = borrower.points - trade.resource.points;
-					borrower.save(function(err){
-						if(!err){
-							borrowerTransferSuccessful = true;
-						}
-					});
-				}
-
-				// if error, reverse everything
-				if(err || !borrower || !borrowerTransferSuccessful){
-					errorState += 'Transfer from borrower failed.  Need to reverse owner points transfer.';
-					console.log(errorState);
-					console.log(err);
-
-					// try reverse the owner points
-					owner.points = owner.points - trade.points;
-					owner.save(function(err){
-						if(err){
-							console.log(JSON.stringify(err, undefined, 2));
-							return;
-						}
-
-						// reversal successful, return 500 error
-						errorState = '';
-						response.send(500, 'Changing state to complete failed.  Not to worry; everything was reversed correctly.');
-					});
-					return;  // definitely don't want anything else happening after this except checking for error state;
-				}
-
-
-				// yay successful, change state to complete
-				trade.state = desiredState;
-				trade.save(function(err){
-					if(err){
-						errorState = 'Points successfully transferred, but error changing trade state to ' + desiredState;
-						console.log(errorState);
-						console.log(JSON.stringify(err, undefined, 2));
-						return;
-					}
-
-					// yay successful, remove any error state messages
-					errorState = '';
-					response.send(200, trade.returnType);
-
-				});
-			});
-		});
+		// success!
+		response.send(200, trade.returnType);
 	});
-
-	// check for illegal state
-	if(errorState != ''){
-		response.send(500, 'Oh no, something went wrong, and trade is in an illegal state.  We are working on it!');
-		throw new Error('Illegal state: ' + errorState);
-	}
-};
-
-
-var markAsCancelled = function(request, response, trade){
-
 
 };
 
 
 var markAsComplete = function(request, response, trade){
+	var userId = request.user._id;
+
+	// work out next state
+	var nextState;
+	if(trade.isBorrower(userId)){
+		nextState = tradeLogic.states.PENDING_COMPLETE_BORROWER;
+	} else if (trade.isOwner(userId)){
+		nextState = tradeLogic.states.PENDING_COMPLETE_OWNER;
+	}
+
+	// change state
+	trade.state = nextState;
+	trade.save(function(err){
+		if(err){
+			response.send(500, err);
+			console.log(JSON.stringify(err, undefined, 2));
+			return;
+		}
+
+		// success!
+		response.send(200, trade.returnType);
+	});
+}
 
 
+var agree = function(request, response, trade){
+	if(trade.state == tradeLogic.states.PENDING_COMPLETE_BORROWER || trade.state == tradeLogic.states.PENDING_COMPLETE_OWNER){
+		transferPoints(request, response, trade, tradeLogic.states.COMPLETE);
+	} 
+	else if(trade.state == tradeLogic.states.PENDING_CANCELLED){
+		cancel(request, response, trade);
+	}
+}
+
+
+var disagree = function(request, response, trade){
+	trade.state = tradeLogic.states.ACCEPTED;
+	trade.save(function(err){
+		if(err){
+			response.send(500, err);
+			console.log(JSON.stringify(err, undefined, 2));
+			return;
+		}
+
+		// success!
+		response.send(200, trade.returnType);
+	});
+}
+
+
+var transferPoints = function(request, response, trade, desiredState){
+	var previousState = trade.state;
+
+	// mark trade as processing
+	trade.state = tradeLogic.states.PROCESSING;
+	trade.save(function(err){
+		if(err){
+			response.send(500, err);
+			console.log(JSON.stringify(err, undefined, 2));
+			return;
+		}
+
+		// transfer the points from the owner
+		User.findById(trade.ownerId, function(err, owner){
+
+			if(err){
+				console.log(JSON.stringify(err, undefined, 2));	
+				reverseState(trade, previousState, response);
+				return;
+			}
+
+			if(!owner){
+				console.log('Owner could not be found.');
+				reverseState(trade, previousState, response);
+				return;
+			}
+
+			owner.points = owner.points + trade.resource.points;
+			owner.save(function(err){
+				if(err){
+					console.log(JSON.stringify(err, undefined, 2));
+					reverseState(trade, previousState, response);
+					return;
+				}
+
+				// transfer points from borrower
+				User.findById(trade.borrowerId, function(err, borrower){
+					if(err){
+						console.log(err);
+						reverseOwnerTransfer(owner, trade, previousState, response);
+						return;
+					}
+					else if( !borrower){
+						console.log('Borrower not found');
+						reverseOwnerTransfer(owner, trade, previousState, response);
+						return;
+					}
+
+					// attempt the transfer
+					borrower.points = borrower.points - trade.resource.points;
+					borrower.save(function(err){
+						if(err){
+							console.log(JSON.stringify(err, undefined, 2));
+							reverseOwnerTransfer(owner, trade);
+							return;
+						}
+						
+						// yay both transfers successful, change state to complete
+						trade.state = desiredState;
+						trade.save(function(err){
+							if(err){
+								console.log(JSON.stringify(err, undefined, 2));
+								reverseOwnerTransfer(owner, trade, previousState, response);
+								return;
+							}
+
+							// yay successful, remove any error state messages
+							response.send(200, JSON.stringify(trade, undefined, 2));
+						});
+					});
+				});
+			});
+		});
+	});
 };
+
+
+var reverseOwnerTransfer = function(owner, trade, previousState, response){
+
+	console.log('Transfer from borrower failed.  Reversing owner points transfer...');
+
+	var message;	
+	// try reverse the owner points
+	owner.points = owner.points - trade.resource.points;
+	owner.save(function(err){
+		if(err){
+			console.log(JSON.stringify(err, undefined, 2));
+			console.log('Reversing owner points failed.  Also still need to change trade back to ' + previousState);
+			response.send(500, 'Uhoh, something bad happened.  Trade is in an invalid state. We are on it!');
+			return;
+		}
+
+		// points reversal successful, now need to reverse state
+		reverseState(trade, previousState, response);
+	});
+};
+
+
+var reverseState = function(trade, previousState, response){
+	console.log('Reversing trade state back to ' + previousState + '...');
+
+	trade.state = previousState;
+	trade.save(function(err){
+		if(err){
+			console.log(JSON.stringify(err, undefined, 2));
+			console.log('Error changing trade state to ' + desiredState);
+			response.send(500, 'Uhoh, something bad happened.  Trade is in an invalid state. We are on it!');
+			return;
+		}
+
+		// yay successful, remove any error state messages
+		response.send(500, 'Something bad happened, but we managed to reverse it!');
+	});
+};
+
+
 
 
 app.listen(port, function() {

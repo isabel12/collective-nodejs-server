@@ -71,7 +71,7 @@
         return [];
       } 
 
-      if(state == states.DECLINED || state == states.FAILED){
+      if(state == states.DECLINED || state == states.FAILED || state == states.PROCESSING){
         return [];
       } 
 
@@ -105,7 +105,7 @@
         return [];
       } 
 
-      if(state == state.DECLINED){
+      if(state == states.DECLINED || state == states.PROCESSING){
         return [];
       } 
 

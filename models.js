@@ -134,11 +134,24 @@ function defineModels(mongoose, fn) {
 
   TradeSchema.method('canDoAction', function(userId, action){
     if(userId.equals(this.borrower.userId)){
-      console.log("is borrower");
       return tradeLogic.getBorrowerActions(this.state, this.borrowerReviewed).indexOf(action) > -1;
     } else if (userId.equals(this.owner.userId)){
       return tradeLogic.getOwnerActions(this.state, this.ownerReviewed).indexOf(action) > -1;
     }
+    return false;
+  });
+
+  TradeSchema.method('isBorrower', function(userId){
+    if(userId.equals(this.borrower.userId)){
+      return true;
+    } 
+    return false;
+  });
+
+  TradeSchema.method('isOwner', function(userId){
+    if(userId.equals(this.owner.userId)){
+      return true;
+    } 
     return false;
   });
 
