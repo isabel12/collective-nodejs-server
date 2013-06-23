@@ -8,19 +8,20 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 
 ## API Methods Currently Implemented
 
+	GET			'/'														(links to this page)
+	GET*		'/authenticate'											(Authenticates login, returning profile)
+	POST 		'/register' 											(Register)
+	GET* 		'/getProfile/{userId}' 									(Gets a users profile)
+	PUT* 		'/updateProfile/{userId}' 								(Updates the profile)
+	POST* 		'/users/{userId}/trades/{tradeId}/reviews' 				(Adds a review)
+	POST* 		'/users/{userId}/addResource'  							(Adds a resource)
+	GET* 		'/users/{userId}/getResources'  						(Gets all the users listed resources)
+	GET* 		'/getResourceLocations'  								(Searches and filters all resource locations)
+	GET* 		'/getResource/{resourceId}'  							(Returns the given resource)
+	PUT* 		'/updateResource/{resourceId}'  						(Updates the given resource)
+	DELETE*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
 
-	GET			'/authenticate'											(Authenticates login, returning profile)
-	POST 		'/users' 												(Register)
-	GET 		'/users/{userId}' 										(Gets a users profile)
-	PUT 		'/users/{userId}' 										(Updates the profile)
-	POST 		'/users/{userId}/trades/{tradeId}/reviews' 				(Adds a review)
-	POST 		'/users/{userId}/resources'  							(Adds a resource)
-	GET 		'/users/{userId}/resources'  							(Gets all the users listed resources)
-	GET 		'/resourceLocations'  									(Searches and filters all resource locations)
-	GET 		'/resources/{resourceId}'  								(Returns the given resource)
-	PUT 		'/resources/{resourceId}'  								(Updates the given resource)
-	DELETE 		'/resources/{resourceId}'  								(Deletes the given resource)
-
+	* requires 'Autheorization' headers
 
 ## API Method Details
 
