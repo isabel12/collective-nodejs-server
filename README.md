@@ -8,19 +8,31 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 
 ## API Methods Currently Implemented
 
-
-	GET			'/authenticate'											(Authenticates login, returning profile)
-	POST 		'/users' 												(Register)
-	GET 		'/users/{userId}' 										(Gets a users profile)
-	PUT 		'/users/{userId}' 										(Updates the profile)
-	POST 		'/users/{userId}/trades/{tradeId}/reviews' 				(Adds a review)
-	POST 		'/users/{userId}/resources'  							(Adds a resource)
-	GET 		'/users/{userId}/resources'  							(Gets all the users listed resources)
-	GET 		'/resourceLocations'  									(Searches and filters all resource locations)
-	GET 		'/resources/{resourceId}'  								(Returns the given resource)
-	PUT 		'/resources/{resourceId}'  								(Updates the given resource)
-	DELETE 		'/resources/{resourceId}'  								(Deletes the given resource)
-
+	GET			'/'														(links to this page)
+	POST*		'/authenticate'											(Authenticates login, returning profile)
+	POST 		'/register' 											(Register)
+	POST*		'/getProfile/{userId}' 									(Gets a users profile)
+	POST*		'/updateProfile/{userId}' 								(Updates the profile)
+	POST* 		'/users/{userId}/trades/{tradeId}/reviews' 				(Adds a review)
+	POST* 		'/users/{userId}/addResource'  							(Adds a resource)
+	POST* 		'/users/{userId}/getResources'  						(Gets all the users listed resources)
+	POST* 		'/getResourceLocations'  								(Searches and filters all resource locations)
+	POST* 		'/getResource/{resourceId}'  							(Returns the given resource)
+	POST* 		'/updateResource/{resourceId}'  						(Updates the given resource)
+	POST*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
+	POST*		'/addTrade'												(Requests a new trade)
+	POST*		'/getTrades'											(test method for getting all active trades)
+	POST*		'/trades/{tradeId}/Actions								(Method to perform all actions on a trade)
+					- add_message
+					- accept
+					- decline
+					- mark_as_complete
+					- cancel
+					- agree
+					- disagree
+					
+	
+	* requires 'Autheorization' headers
 
 ## API Method Details
 
@@ -116,6 +128,7 @@ Fields allowed to be changed are:
 * address
 * city
 * postcode
+* password
 
 ####Request
 	PUT '/user/{id}'
@@ -128,7 +141,8 @@ Fields allowed to be changed are:
 		},
 		"address": "Cool place on the hill",
 	 	"city": "Wellington",
-		"postcode":"6021"
+		"postcode":"6021",
+		"password": "bunnies"
 	}
 
 ######'location'
@@ -343,3 +357,74 @@ If the trade is still in progress, or you have already reviewed, you will not be
 * 500 - server error
 
 
+###Request a Trade
+####Request
+	POST '/addTrade'
+	{
+		"resourceId": "51c536476f2b4a7016000005"
+	}
+	
+####Response
+	{
+	  "resourceId": "51c67561f23f86ac12000002",
+	  "id": "51c6d48b27b136c819000002",
+	  "borrower": {
+	    "userId": "51c535916f2b4a7016000002",
+	    "lastName": "Broome-nicholson",
+	    "firstName": "Isabel"
+	  },
+	  "state": "p_accepted",
+	  "ownerActions": [
+	    "accept",
+	    "decline",
+	    "add_message"
+	  ],
+	  "borrowerActions": [
+	    "add_message"
+	  ],
+	  "messages": []
+	}
+
+	
+###Add a message
+####Request
+
+	POST '/trades/{tradeId}/Actions?action=add_message'
+	{
+		"message": "Hey yeah thats fine.  See you then!"
+	}
+	
+####Response
+
+	{
+	  "date": "2013-06-23T11:01:26.967Z",
+	  "message": "Hey yeah thats fine.  See you then!",
+	  "_id": "51c6d58627b136c819000003",
+	  "sender": {
+	    "firstName": "Isabel",
+	    "lastName": "Broome-nicholson",
+	    "userId": "51c535916f2b4a7016000002"
+	  }
+	}
+	
+* 403 - if not allowed to do that action.
+	
+###Perform any other action on a trade
+####Request
+	
+	POST '/trades/{tradeId}/Actions?action=accept'
+	
+	POST '/trades/{tradeId}/Actions?action=decline'
+	
+	POST '/trades/{tradeId}/Actions?action=cancel'
+	
+	POST '/trades/{tradeId}/Actions?action=mark_as_complete'
+	
+	POST '/trades/{tradeId}/Actions?action=agree'
+	
+	POST '/trades/{tradeId}/Actions?action=disagree'
+
+####Response
+
+* 200 - Currently returns the trade with all messages (need to change this)	
+* 403 - if not allowed to do that action.
