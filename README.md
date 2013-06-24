@@ -8,7 +8,7 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 
 ## API Methods Currently Implemented
 
-	GET		'/'														(links to this page)
+	GET			'/'														(links to this page)
 	POST*		'/authenticate'											(Authenticates login, returning profile)
 	POST 		'/register' 											(Register)
 	POST*		'/getProfile/{userId}' 									(Gets a users profile)
@@ -20,11 +20,17 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 	POST* 		'/getResource/{resourceId}'  							(Returns the given resource)
 	POST* 		'/updateResource/{resourceId}'  						(Updates the given resource)
 	POST*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
-	POST*		'/addTrade'									(Requests a new trade)
-	POST**		'/getTrades'									(test method for getting all active trades)
-	POST*		'/trades/{tradeId}/Actions?action=add_message'
-	POST*		'/trades/{tradeId}/Actions?action=accept'
-	POST*		'/trades/{tradeId}/Actions?action=decline'
+	POST*		'/addTrade'												(Requests a new trade)
+	POST*		'/getTrades'											(test method for getting all active trades)
+	POST*		'/trades/{tradeId}/Actions								(Method to perform all actions on a trade)
+					- add_message
+					- accept
+					- decline
+					- mark_as_complete
+					- cancel
+					- agree
+					- disagree
+					
 	
 	* requires 'Autheorization' headers
 
@@ -380,14 +386,14 @@ If the trade is still in progress, or you have already reviewed, you will not be
 	}
 
 	
-###Add a message to a Trade
+###Add a message
 ####Request
 
 	POST '/trades/{tradeId}/Actions?action=add_message'
 	{
 		"message": "Hey yeah thats fine.  See you then!"
 	}
-
+	
 ####Response
 
 	{
@@ -402,60 +408,23 @@ If the trade is still in progress, or you have already reviewed, you will not be
 	}
 	
 * 403 - if not allowed to do that action.
-
-###Accept Trade
+	
+###Perform any other action on a trade
 ####Request
-
+	
 	POST '/trades/{tradeId}/Actions?action=accept'
 	
-####Response
-	{
-	  "resourceId": "51c67561f23f86ac12000002",
-	  "id": "51c6d48b27b136c819000002",
-	  "borrower": {
-	    "userId": "51c535916f2b4a7016000002",
-	    "lastName": "Broome-nicholson",
-	    "firstName": "Isabel"
-	  },
-	  "state": "accepted",
-	  "ownerActions": [
-	    "accept",
-	    "decline",
-	    "add_message"
-	  ],
-	  "borrowerActions": [
-	    "add_message"
-	  ],
-	  "messages": []
-	}
-
-* 403 - if not allowed to do that action.
-
-###Decline Trade
-####Request
-
 	POST '/trades/{tradeId}/Actions?action=decline'
 	
+	POST '/trades/{tradeId}/Actions?action=cancel'
+	
+	POST '/trades/{tradeId}/Actions?action=mark_as_complete'
+	
+	POST '/trades/{tradeId}/Actions?action=agree'
+	
+	POST '/trades/{tradeId}/Actions?action=disagree'
+
 ####Response
-	{
-	  "resourceId": "51c67561f23f86ac12000002",
-	  "id": "51c6d48b27b136c819000002",
-	  "borrower": {
-	    "userId": "51c535916f2b4a7016000002",
-	    "lastName": "Broome-nicholson",
-	    "firstName": "Isabel"
-	  },
-	  "state": "declined",
-	  "ownerActions": [
-	  ],
-	  "borrowerActions": [
-	  ],
-	  "messages": []
-	}
 
+* 200 - Currently returns the trade with all messages (need to change this)	
 * 403 - if not allowed to do that action.
-
-
-
-
-
