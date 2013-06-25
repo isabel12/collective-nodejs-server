@@ -21,8 +21,9 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 	POST* 		'/updateResource/{resourceId}'  						(Updates the given resource)
 	POST*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
 	POST*		'/addTrade'												(Requests a new trade)
-	POST*		'/getTrades'											(test method for getting all active trades)
 	POST*		'/getTrade/{tradeId}'									(Gets the trade)
+	POST*		'/users/{userId}/getTrades'								(Gets all the user's trades)
+	POST*		'/users/{userId}/getTrades?date=2013-06-25T07:34:31.555Z'(Gets all the users trades that have been updated since the given time)	
 	POST*		'/getTrade/{tradeId}?currVer=2'							(Gets the trade if there is a newer version)
 	POST*		'/trades/{tradeId}/Actions								(Method to perform all actions on a trade)
 					- add_message
@@ -530,3 +531,16 @@ This method takes an optional parameter 'currVer', which is a positive integer. 
 ######if up to date:
 	{}
 	
+	
+### Get a user's Trades
+####Request
+
+	POST '/users/:userId/getTrades'
+	
+	POST '/users/:userId/getTrades?date=2013-06-25T07:34:31.555Z'
+
+####Response
+
+* 200 with list of trades
+* 403 if not your account
+* 400 if date string isn't valid
