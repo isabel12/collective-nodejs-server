@@ -116,7 +116,8 @@ function defineModels(mongoose, fn) {
     'state': String,
     'ownerReviewed': Boolean,
     'borrowerReviewed': Boolean,
-    '__v': Number
+    '__v': Number,
+    'lastUpdated': Date
   });
 
 
@@ -177,7 +178,8 @@ function defineModels(mongoose, fn) {
         ownerActions : this.ownerActions,
         borrowerActions : this.borrowerActions,
         messages: this.messages,
-        version: this.__v
+        version: this.__v,
+        lastUpdated: this.lastUpdated
       };
     });
 

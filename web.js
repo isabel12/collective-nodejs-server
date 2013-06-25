@@ -845,7 +845,15 @@ app.post('/addTrade', auth, function(request, response){
 
 app.post('/getTrades', auth, function(request, response){
 	
-	Trade.find(function(err, trades){
+
+	var dateString = '2013-06-25T07:34:31.555Z'
+
+	var date = new Date();
+	date.setISO8601(dateString);
+	console.log(date);
+
+
+	Trade.find({'lastUpdated':{$gte: date}}, function(err, trades){
 		if(err){
 			console.log(JSON.stringify(err, undefined, 2));
 			response.send(500, JSON.stringify(err, undefined, 2));
@@ -857,22 +865,64 @@ app.post('/getTrades', auth, function(request, response){
 			result[i] = trades[i].returnType;
 		};
 
-
 		response.send(JSON.stringify(result, undefined, 2));
 	});
 
 });
 
 
+app.post('/users/:userId/getTrades', auth, function(request, response){
+	// check they are your trades
+	var userId = request.user._id;
+	if(request.params.userId != userId.toString()){
+		response.send(403, 'You can only access your own trades');
+		return;
+	}
+	var userId
+
+	// get the date
+	var date;
+	try{
+		if(request.query.date){
+			date = new Date();
+			date.setISO8601(request.query.date.trim());
+		}
+	} catch (err){
+		response.send(400, 'Date string is not valid.  Example format: ' + '2013-06-25T07:34:31.555Z');
+		console.log(err);
+		return;
+	}
+
+	// make the query
+	var query = {
+		$or: [{'owner.userId': userId}, {'borrower.userId': userId}]
+	}
+	if(date != null){
+		query.lastUpdated = {$gte: date};
+	}
+
+	Trade.find(query, function(err, trades){
+		if(err){
+			console.log(JSON.stringify(err, undefined, 2));
+			response.send(500, JSON.stringify(err, undefined, 2));
+			return;
+		}	
+
+		var result = new Array();
+		for (var i = 0; i < trades.length; i++) {
+			result[i] = trades[i].returnType;
+		};
+
+		response.send(JSON.stringify(result, undefined, 2));
+	});
+});
 
 app.post('/getTrade/:tradeId', auth, function(request, response){
-
 	var version = request.query.currVer ? Number(request.query.currVer): null;
 	console.log(version);
 	if(version == NaN){
 		response.send(400, 'Query paramater "currVer" has to be an integer.');
 	}
-
 
 	tradeId = mongoose.Types.ObjectId(request.params.tradeId);
 	try{
@@ -911,9 +961,7 @@ app.post('/getTrade/:tradeId', auth, function(request, response){
 		response.send(200, {});
 		return;
 	});
-
 });
-
 
 
 // {
@@ -997,6 +1045,7 @@ var addMessage = function(request, response, trade){
 		'message': request.body.message});
 
 	trade.messages.push(message);
+	trade.lastUpdated = new Date();
 	trade.save(function(err){
 		if(err){
 			throw err;
@@ -1010,6 +1059,7 @@ var addMessage = function(request, response, trade){
 
 var accept = function(request, response, trade){
 	trade.state = tradeLogic.states.ACCEPTED;
+	trade.lastUpdated = new Date();
 	trade.save(function(err){
 		if(err){
 			response.send(500, err);
@@ -1024,6 +1074,7 @@ var accept = function(request, response, trade){
 
 var decline = function(request, response, trade){
 	trade.state = tradeLogic.states.DECLINED;
+	trade.lastUpdated = new Date();
 	trade.save(function(err){
 		if(err){
 			response.send(500, err);
@@ -1050,6 +1101,7 @@ var cancel = function(request, response, trade){
 	}
 
 	// save the change
+	trade.lastUpdated = new Date();
 	trade.save(function(err){
 		if(err){
 			response.send(500, err);
@@ -1077,6 +1129,7 @@ var markAsComplete = function(request, response, trade){
 
 	// change state
 	trade.state = nextState;
+	trade.lastUpdated = new Date();
 	trade.save(function(err){
 		if(err){
 			response.send(500, err);
@@ -1102,6 +1155,7 @@ var agree = function(request, response, trade){
 
 var disagree = function(request, response, trade){
 	trade.state = tradeLogic.states.ACCEPTED;
+	trade.lastUpdated = new Date();
 	trade.save(function(err){
 		if(err){
 			response.send(500, err);
@@ -1144,6 +1198,7 @@ var transferPoints = function(request, response, trade, desiredState){
 
 	// mark trade as processing
 	trade.state = tradeLogic.states.PROCESSING;
+	trade.lastUpdated = new Date();
 	trade.save(function(err){
 		if(err){
 			response.send(500, err);
@@ -1279,7 +1334,30 @@ String.prototype.toTitleCase = function()
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 }
 
+Date.prototype.setISO8601 = function (string) {
+    var regexp = "([0-9]{4})(-([0-9]{2})(-([0-9]{2})" +
+        "(T([0-9]{2}):([0-9]{2})(:([0-9]{2})(\.([0-9]+))?)?" +
+        "(Z|(([-+])([0-9]{2}):([0-9]{2})))?)?)?)?";
+    var d = string.match(new RegExp(regexp));
 
+    var offset = 0;
+    var date = new Date(d[1], 0, 1);
+
+    if (d[3]) { date.setMonth(d[3] - 1); }
+    if (d[5]) { date.setDate(d[5]); }
+    if (d[7]) { date.setHours(d[7]); }
+    if (d[8]) { date.setMinutes(d[8]); }
+    if (d[10]) { date.setSeconds(d[10]); }
+    if (d[12]) { date.setMilliseconds(Number("0." + d[12]) * 1000); }
+    if (d[14]) {
+        offset = (Number(d[16]) * 60) + Number(d[17]);
+        offset *= ((d[15] == '-') ? 1 : -1);
+    }
+
+    offset -= date.getTimezoneOffset();
+    time = (Number(date) + (offset * 60 * 1000));
+    this.setTime(Number(time));
+}
 
 //---------------------------------------------------------------------------------
 // Mongoose schema helper method
