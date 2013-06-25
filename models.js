@@ -26,18 +26,6 @@ function defineModels(mongoose, fn) {
   //================================================================================================================
   // Return types
   //================================================================================================================
-  var RTProfileSchema = new Schema({
-    'email': String,
-    'firstName': String,
-    'lastName': String, 
-    'address': String,
-    'city': String,
-    'postcode': String,
-    'lookingFor': String,
-    'rating': Number,
-    'points': Number,
-    'reviews': [ReviewSchema]
-  });
 
   var ProfileUpdateSchema = new Schema({
     'firstName': String,
@@ -50,9 +38,7 @@ function defineModels(mongoose, fn) {
   });
 
 
-
   //================================================================================================================
-
 
   /**
     * Model: Review
@@ -104,6 +90,18 @@ function defineModels(mongoose, fn) {
 
       return value;
     });
+
+
+
+  var reviewComparator = function(a, b){
+    console.log('Review date type: ' + typeof a);
+
+    var dateA = dates.convert(a);
+    var dateB = dates.convert(b);
+    var value = (dates.compare(dateA,dateB)*-1);
+
+    return value;
+  }
 
 
 
@@ -173,6 +171,7 @@ function defineModels(mongoose, fn) {
         resourceId: this.resource,
         id: this._id,
         borrower: this.borrower,
+        owner: this.owner,
         state: this.state,
         ownerActions : this.ownerActions,
         borrowerActions : this.borrowerActions,
@@ -202,9 +201,10 @@ function defineModels(mongoose, fn) {
     'postcode': String,
     'location': Object,
     'points': Number,
+    'numItemsLent': Number,
+    'numItemsBorrowed': Number,
+    'blackMarks':Number,
     'lookingFor': String,
-    'resources': [],
-    'trades': [{type: Schema.Types.ObjectId, ref: 'Resource'}],
     'reviews':[ReviewSchema],
     'hashed_password': String,
     'salt': String
@@ -231,6 +231,27 @@ function defineModels(mongoose, fn) {
       return (totalRating / this.reviews.length).toFixed(2);
     });  
 
+  UserSchema.virtual('returnType')
+  .get(function(){
+    var value = {
+      id: this._id,
+      email: this.email,
+      firstName: this.firstName,
+      lastName: this.lastName,
+      address: this.address,
+      city: this.city,
+      postcode: this.postcode,
+      lookingFor: this.lookingFor,
+      rating: this.rating,
+      points: this.points,
+      numItemsLent: this.numItemsLent,
+      numItemsBorrowed: this.numItemsBorrowed,
+      blackMarks: this.blackMarks,
+      reviews: this.reviews.reverse()
+    };
+    return value;
+  });
+
   UserSchema.method('authenticate', function(plainText) {
     return this.encryptPassword(plainText) === this.hashed_password;
   });
@@ -255,7 +276,6 @@ function defineModels(mongoose, fn) {
   // create the models
   mongoose.model('User', UserSchema);
   mongoose.model('Review', ReviewSchema);
-  mongoose.model('RTProfile', RTProfileSchema);
   mongoose.model('ProfileUpdate', ProfileUpdateSchema);
   mongoose.model('Resource', ResourceSchema);
   mongoose.model('Trade', TradeSchema);

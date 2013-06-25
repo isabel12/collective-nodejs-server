@@ -20,9 +20,11 @@
       MARK_AS_COMPLETE : 'mark_as_complete',
       MARK_AS_FAILED : 'mark_as_failed',
       ACCEPT : 'accept',
-      DECLINE : 'decline'
+      DECLINE : 'decline',
+      ADD_REVIEW: 'add_review'
     }
 
+    var resourceTypes = ['tools', 'land', 'plants', 'services'];
 
     var isValidAction = function(action){
         for (var key in actions) {
@@ -43,6 +45,10 @@
     }
 
     var getBorrowerActions = function(state, borrowerHasReviewed){
+
+      if(!isValidState(state)){
+        throw new Error('State is invalid!');
+      }
 
       if(state == states.PENDING_ACCEPTED){
         return [actions.ADD_MESSAGE];
@@ -66,7 +72,7 @@
 
       if(state == states.COMPLETE || state == states.CANCELLED){
         if(!borrowerHasReviewed){
-          return [actions.REVIEW];
+          return [actions.ADD_REVIEW];
         }
         return [];
       } 
@@ -78,6 +84,10 @@
     }
 
     var getOwnerActions = function(state, ownerHasReviewed){
+      if(!isValidState(state)){
+        throw new Error('State is invalid!');
+      }
+
       if(state == states.PENDING_ACCEPTED){
         return [actions.ACCEPT, actions.DECLINE, actions.ADD_MESSAGE];
       } 
@@ -100,7 +110,7 @@
 
       if(state == states.CANCELLED || state == states.COMPLETE || state == states.FAILED){
         if(!ownerHasReviewed){
-          return [actions.REVIEW];
+          return [actions.ADD_REVIEW];
         }
         return [];
       } 
@@ -108,7 +118,6 @@
       if(state == states.DECLINED || state == states.PROCESSING){
         return [];
       } 
-
     }
 
 
@@ -119,3 +128,4 @@
     exports.getOwnerActions = getOwnerActions;
     exports.isValidState = isValidState;
     exports.isValidAction = isValidAction;
+    exports.resourceTypes = resourceTypes;

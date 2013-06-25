@@ -6,7 +6,7 @@ var path = require("path");
 var models = require('./models');
 var tradeLogic = require('./tradeLogic');
 var jsonValidation = require('./jsonValidation');
-var User, Review, Profile, Resource, Trade, Message, ProfileUpdate;  // mongoose schemas
+var User, Review, Resource, Trade, Message, ProfileUpdate;  // mongoose schemas
 var UpdateProfileSchema, RegisterProfileSchema, FilterResourceSchema, AddResourceSchema, UpdateResourceSchema, validateJSON;// validation schemas
 
 
@@ -40,7 +40,6 @@ mongoose.connect(uristring, function (err, res) {
 // setup the models
 models.defineModels(mongoose, function() {
 	User = mongoose.model('User');
-	Profile = mongoose.model('RTProfile');
 	Review = mongoose.model('Review');
 	ProfileUpdate = mongoose.model('ProfileUpdate');
 	Resource = mongoose.model('Resource');
@@ -105,11 +104,6 @@ var adminAuth = express.basicAuth(function(user, pass, callback) {
 
 // The API end points
 //--------------------------------------------------------------------------------------------------------------
-var errorFunction = function(err){
-	if (err) {
-		console.log('Database error: ' + err);
-	}
-};
 
 // root of the application
 app.get('/', function(request, response){
@@ -117,11 +111,10 @@ app.get('/', function(request, response){
 });
 
 
-
 // GET '/authenticate'
 // This method returns the 
 app.post('/authenticate', auth, function(request, response){
-	var profile = new Profile(request.user);
+	var profile = request.user.returnType;
 	profile.rating = request.user.rating;
 
 	response.send(200, JSON.stringify(profile, undefined, 2));
@@ -165,6 +158,7 @@ app.post('/register', function(request, response){
 	User.find({'email':request.body.email}, function (err, existingUsers) {
 		// if the query errors out
 		if (err){
+			console.log(err);
 			response.send(500, err);
 			return;
 		}
@@ -172,6 +166,7 @@ app.post('/register', function(request, response){
  		// check the user doesn't exist already
 		if(existingUsers.length != 0){
 			console.log('An account already exists for that email.');
+			console.log(JSON.stringify(existingUsers, undefined, 2));
 			response.send(403, 'An account already exists for that email.');
 			return;
 		}
@@ -179,59 +174,73 @@ app.post('/register', function(request, response){
 	  	// create a new user
 	  	var newUser = new User(body);
 	  	newUser.points = 0;
+	  	newUser.numItemsLent = 0;
+	  	newUser.numItemsBorrowed = 0;
+	  	newUser.blackMarks = 0;
 	  	newUser.set('password', body.password);
-	  	newUser.save(errorFunction);
-	  	console.log('New user created: ' + JSON.stringify(newUser, undefined, 2));
+	  	newUser.save(function(err){
+			if (err){
+				console.log(err);
+				response.send(500, err);
+				return;
+			}
 
-		// make the object to return
-	  	var profile = new Profile(newUser);
-	  	profile.rating = 0;
-	  	console.log('Returning: ' + JSON.stringify(profile, undefined, 2));
+		  	console.log('New user created: ' + JSON.stringify(newUser, undefined, 2));
 
-	  	// send the new user
-	  	response.send(201, profile);
+			// make the object to return
+		  	var profile = newUser.returnType;
+		  	profile.rating = 0;
+		  	console.log('Returning: ' + JSON.stringify(profile, undefined, 2));
+
+		  	// send the new user
+		  	response.send(201, profile);
+		});
 	});
 });
-
-
-
 
 
 // GET '/user/{id}'
 // Returns the profile of the user with the given id.
 app.post('/getProfile/:id', auth, function(request, response){
 
+	var userId;
+	try{
+		userId = mongoose.Types.ObjectId(request.params.id);
+	} catch(err){
+		response.send(404, 'That user could not be found.');
+		return;
+	}
+
 	// find the user
 	var query = User.findById(request.params.id, function(err, user) {
 
-		if (!err){
-			console.log(JSON.stringify(user, undefined, 2));
-			if (!user){
-				response.send(404, 'That user does not exist.');
-			}
-
-
-			var profile = new Profile(user);
-			profile.rating = user.rating;
-
-			response.send(JSON.stringify(profile, undefined, 2)); 		
+		if(err){
+			console.log(err);
+			response.send(500);
+			return;
 		}
-		else {
-			response.send(500, 'An error happened with the query');  // returns the error code
+
+		if (!user){
+			response.send(404, 'That user could not be found.');
+			return;
 		}
+
+		var profile = user.returnType;
+		profile.rating = user.rating;
+
+		response.send(JSON.stringify(profile, undefined, 2)); 		
 	});
 });
-
 
 
 // PUT '/user/{id}'
 // {
 //  "firstName": "Isabel",
 // 	"lastName":"Broome-Nicholson",
- // "location":{
-	//  	"lat": 13.4,
-	// 	"lon": 123.3
-	// },
+// "location":{
+//  	"lat": 13.4,
+// 	"lon": 123.3
+// },
 // 	"address": "Cool place on the hill",
 //  "city": "Wellington",
 // 	"postcode":"6021"
@@ -276,27 +285,31 @@ app.post('/updateProfile/:id', auth, function(request, response){
 
 	// update
 	User.update({'_id': request.params.id}, updateArguments, function(err, numberAffected, raw){
-		if(!err){
-			// check the user existed
-			if(numberAffected == 0){
-				response.send(404, 'That user does not exist.');
+		if(err){
+			console.log(err);
+			response.send(500);
+			return;
+		}
+
+		// check the user existed
+		if(numberAffected == 0){
+			response.send(404, 'That user does not exist.');
+			return;
+		}
+
+		// find user
+		User.findById(request.user._id, function(err, user){
+			if(err){
+				console.log(err);
+				response.send(500);
 				return;
 			}
 
 			// send the updated profile back
-  			User.findById(request.user._id, function(err, user){
-  				if (!err){
-  					var profile = new Profile(user);
-					profile.rating = user.rating;
-					response.send(200, JSON.stringify(profile, undefined, 2));
-  				}
-  				else {
-  					response.send(500, 'An error happened with the query');  
-  				}
-  			});	
-  		} else {
-  			response.send(500, 'An error happened with the query');  
-  		}	
+			var profile = user.returnType;
+			profile.rating = user.rating;
+			response.send(200, JSON.stringify(profile, undefined, 2));
+		});	
 	});
 });
 
@@ -314,35 +327,88 @@ app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, respo
 		return;  
 	}
 
-	// get the reviewee id
-	var revieweeId = request.params.userId;
-	var tradeId = request.params.tradeId;
+	// get ids
+	var reviewerId = request.user._id;
+	var revieweeId;
+	var tradeId;
+	try{
+		revieweeId = mongoose.Types.ObjectId(request.params.userId);
+	} catch(err){
+		response.send(404, 'That user could not be found.');
+		return;
+	}
+	try{
+		trade = mongoose.Types.ObjectId(request.params.tradeId);
+	} catch(err){
+		response.send(404, 'That trade could not be found.');
+		return;
+	}
 
-	// define the query
-	var query = User.findById(revieweeId, function(err, reviewee) {
-		if (!err){
 
-			console.log(JSON.stringify(request.body, undefined, 2));
+	// get the trade
+	Trade.findById(tradeId, function(err, trade){
+		if(err){
+			console.log(err);
+			response.send(500);
+			return;
+		}
 
+		// check the review is legal (ie. they both belong to the trade, and they haven't reviewed it yet)
+		if (!trade.canDoAction(reviewerId, tradeLogic.actions.ADD_REVIEW)){
+			response.send(403, 'You are not authorized to perform that action.');
+			return;
+		}
+
+		var isOwner = trade.isOwner(reviewerId);
+
+		// make and save the review
+		User.findById(revieweeId, function(err, reviewee) {
+			if(err){
+				console.log(err);
+				response.send(500);
+				return;
+			}	
+		
 			// make the review
 			var review = new Review(request.body);
 			review.date = new Date();
 			review.reviewer = {'firstName':request.user.firstName, 'lastName': request.user.lastName, 'userId': request.user._id };	
 			review.tradeId = tradeId;
-			review.save(errorFunction);
+			review.save(function(err){
+				if(err){
+					console.log(err);
+					response.send(500);
+					return;
+				}
 
-			console.log(JSON.stringify(review, undefined, 2));
-			// TODO - check the review is legal (ie. they both belong to the trade, and they haven't reviewed it yet)
+				// add the review
+				reviewee.reviews.push(review);
+				reviewee.save(function(err){
+					if(err){
+						console.log(err);
+						response.send(500);
+						return;
+					}	
 
-			// add the review
-			reviewee.reviews.push(review);
-			reviewee.save();
+					// mark trade as reviewed
+					if(isOwner){
+						trade.ownerReviewed = true;
+					} else {
+						trade.borrowerReviewed = true;
+					}
+					trade.save(function(err){
+						if(err){
+							console.log(err);
+							response.send(500);
+							return;
+						}	
 
-			response.send(204);
-		}
-		else {
-			response.send(500, 'An error happened with the query');  
-		}
+						// send the response
+						response.send(204);			
+					});			
+				});
+			});
+		});
 	});
 });
 
@@ -370,25 +436,26 @@ app.post('/users/:id/uploadimage', auth, function(request, response){
 
 	if (path.extname(req.files.file.name).toLowerCase() === '.png'){
 		fs.rename(tempPath, targetPath, function(err){
-			if (err) {
+			if(err){
 				console.log(err);
+				response.send(500);
 				return;
 			}
 
 			console.log('Image uploaded to ' + targetPath);
 			response.send(204, 'Image uploaded to ' + targetPath);
-
 		});
+	} 
 
-	} else {
-		fs.unlink(tempPath, function(){
+	else {
+		fs.unlink(tempPath, function(err){
 			if (err){
 				throw err;
 			}
 
 			console.log('Only .png files are allowed!');
 			response.send(400, 'Only .png files are allowed!');
-		})
+		});
 	}
 });
 
@@ -415,8 +482,14 @@ app.post('/users/:id/addResource', auth, function(request, response){
 	request.body.type = request.body.type.toLowerCase();
 	request.body.title = request.body.title.capitalize();
 	request.body.description = request.body.description.capitalize();
+	request.body.type = request.body.type.trim();
 
 	// validate input
+	if(tradeLogic.resourceTypes.indexOf(request.body.type) <= -1){
+		response.send(400, 'Type field is invalid - should be one of: ' + tradeLogic.resourceTypes);
+		return;
+	}
+
 	var validationMessage = validateJSON(request.body, AddResourceSchema);
 	if (validationMessage){
 		response.send(400, validationMessage);
@@ -429,10 +502,9 @@ app.post('/users/:id/addResource', auth, function(request, response){
 	resource.owner = request.user._id;
 
 	resource.save(function(err){
-
 		if(err){
-			response.send(500, err);
 			console.log(err);
+			response.send(500);
 			return;
 		}
 
@@ -443,10 +515,17 @@ app.post('/users/:id/addResource', auth, function(request, response){
 
 // Gets all the user's resources
 app.post('/users/:userId/getResources', auth, function(request, response){
-	var id = request.params.userId;
+	var userId;
+	try{
+		userId = mongoose.Types.ObjectId(request.params.userId);
+	} catch(err){
+		response.send(404, 'That resource could not be found.');
+		return;
+	}
 
-	Resource.find({'owner': id}, function(err, resources){
+	Resource.find({'owner': userId}, function(err, resources){
 		if(err){
+			console.log(err);
 			response.send(500);
 			return;
 		}
@@ -462,10 +541,20 @@ app.post('/users/:userId/getResources', auth, function(request, response){
 
 // Gets an individual resource with all details.
 app.post('/getResource/:id', auth, function(request, response){
-	var id = request.params.id;
 
-	Resource.find({'_id': id}, function(err, resources){
+	// make sure it is a valid id
+	var resourceId;
+	try{
+		resourceId = mongoose.Types.ObjectId(request.params.id);
+	} catch(err){
+		response.send(404, 'That resource could not be found.');
+		return;
+	}
+
+	// find the resource
+	Resource.find({'_id': resourceId}, function(err, resources){
 		if(err){
+			console.log(err);
 			response.send(500);
 			return;
 		}
@@ -492,6 +581,13 @@ app.post('/getResource/:id', auth, function(request, response){
 // updates an individual resource
 app.post('/updateResource/:id', auth, function(request, response){
 	var body = request.body;
+	var resourceId;
+	try{
+		resourceId = mongoose.Types.ObjectId(request.params.id);
+	} catch(err){
+		response.send(404, 'That resource could not be found.');
+		return;
+	}
 
 	// tidy up input
 	if(body.type){
@@ -517,7 +613,7 @@ app.post('/updateResource/:id', auth, function(request, response){
 
 
 	// update
-	Resource.update({'_id': request.params.id, 'owner': request.user._id}, updateArguments, function(err, numberAffected, raw){
+	Resource.update({'_id': resourceId, 'owner': request.user._id}, updateArguments, function(err, numberAffected, raw){
 		if(!err){
 			// check the resource existed, and you own it
 			if(numberAffected == 0){
@@ -543,10 +639,18 @@ app.post('/updateResource/:id', auth, function(request, response){
 
 // deletes an individual resource
 app.post('/deleteResource/:id', auth, function(request, response){
-	var id = request.params.id;
+	// get resource id
+	var resourceId;
+	try{
+		resourceId = mongoose.Types.ObjectId(request.params.id);
+	} catch(err){
+		response.send(404, 'That resource could not be found.');
+		return;
+	}
 
-	Resource.findById(id, function(err, resource){
+	Resource.findById(resourceId, function(err, resource){
 		if(err){
+			console.log(err);
 			response.send(500);
 			return;
 		}
@@ -564,8 +668,9 @@ app.post('/deleteResource/:id', auth, function(request, response){
 		}
 
 		// remove the resource
-		Resource.findByIdAndRemove(id, function(err){
+		Resource.findByIdAndRemove(resourceId, function(err){
 			if(err){
+				console.log(err);
 				response.send(500);
 				return;
 			}
@@ -734,7 +839,6 @@ app.post('/addTrade', auth, function(request, response){
 });
 
 
-
 app.post('/getTrades', auth, function(request, response){
 	
 	Trade.find(function(err, trades){
@@ -756,14 +860,19 @@ app.post('/getTrades', auth, function(request, response){
 });
 
 
-//
 // {
 // 	"message": "Hey yeah thats fine.  See you then!"
 // }
 //
 app.post('/trades/:tradeId/Actions', auth, function(request, response){
-	var tradeId = request.params.tradeId;
 	var action = request.query.action;
+	var tradeId;
+	try{
+		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
+	} catch(err){
+		response.send(404, 'That trade could not be found.');
+		return;
+	}
 	
 	// check the action is valid
 	if(!tradeLogic.isValidAction(action)){
@@ -800,6 +909,9 @@ app.post('/trades/:tradeId/Actions', auth, function(request, response){
 			case tradeLogic.actions.ACCEPT:
 				accept(request, response, trade);
 				break;
+			case tradeLogic.actions.DECLINE:
+				decline(request, response, trade);
+				break;
 			case tradeLogic.actions.AGREE:
 				agree(request, response, trade);
 				break;
@@ -811,7 +923,10 @@ app.post('/trades/:tradeId/Actions', auth, function(request, response){
 				break;
 			case tradeLogic.actions.CANCEL:
 				cancel(request, response, trade);
-				break;		
+				break;	
+			case tradeLogic.actions.MARK_AS_FAILED:
+				markAsFailed(request, response, trade);
+				break;	
 			default:
 				response.send(500, 'Action is not yet supported.');
 		}
@@ -831,9 +946,9 @@ var addMessage = function(request, response, trade){
 			throw err;
 			return;
 		}
-	});
 
-	response.send(200, JSON.stringify(message, undefined, 2));
+		response.send(200, JSON.stringify(message, undefined, 2));
+	});
 };
 
 
@@ -845,9 +960,9 @@ var accept = function(request, response, trade){
 			console.log(JSON.stringify(err, undefined, 2));
 			return;
 		}
-	});
 
-	response.send(200, JSON.stringify(trade.returnType, undefined, 2));
+		response.send(200, JSON.stringify(trade.returnType, undefined, 2));
+	});
 };
 
 
@@ -859,9 +974,9 @@ var decline = function(request, response, trade){
 			console.log(JSON.stringify(err, undefined, 2));
 			return;
 		}
-	});
 
-	response.send(200, JSON.stringify(trade.returnType, undefined, 2));
+		response.send(200, JSON.stringify(trade.returnType, undefined, 2));
+	});
 };
 
 
@@ -944,6 +1059,30 @@ var disagree = function(request, response, trade){
 }
 
 
+var markAsFailed = function(request, response, trade){
+	// find borrower
+	User.findById(trade.borrower.userId, function(err, borrower){
+		if(err){
+			response.send(500, err);
+			console.log(JSON.stringify(err, undefined, 2));
+			return;
+		}
+
+		// mark with black mark
+		borrower.blackMarks += 1;
+		borrower.save(function(err){
+			if(err){
+				response.send(500, err);
+				console.log(JSON.stringify(err, undefined, 2));
+				return;
+			}
+
+			// transfer points
+			transferPoints(request, response, trade, tradeLogic.states.FAILED);
+		});
+	});
+}
+
 var transferPoints = function(request, response, trade, desiredState){
 	var previousState = trade.state;
 
@@ -971,7 +1110,8 @@ var transferPoints = function(request, response, trade, desiredState){
 				return;
 			}
 
-			owner.points = owner.points + trade.resource.points;
+			owner.points += trade.resource.points;
+			owner.numItemsLent += 1;
 			owner.save(function(err){
 				if(err){
 					console.log(JSON.stringify(err, undefined, 2));
@@ -993,7 +1133,8 @@ var transferPoints = function(request, response, trade, desiredState){
 					}
 
 					// attempt the transfer
-					borrower.points = borrower.points - trade.resource.points;
+					borrower.points -= trade.resource.points;
+					borrower.numItemsBorrowed += 1;
 					borrower.save(function(err){
 						if(err){
 							console.log(JSON.stringify(err, undefined, 2));
@@ -1011,7 +1152,7 @@ var transferPoints = function(request, response, trade, desiredState){
 							}
 
 							// yay successful, remove any error state messages
-							response.send(200, JSON.stringify(trade, undefined, 2));
+							response.send(200, JSON.stringify(trade.returnType, undefined, 2));
 						});
 					});
 				});
@@ -1027,7 +1168,8 @@ var reverseOwnerTransfer = function(owner, trade, previousState, response){
 
 	var message;	
 	// try reverse the owner points
-	owner.points = owner.points - trade.resource.points;
+	owner.points -= trade.resource.points;
+	owner.numItemsLent -= 1;
 	owner.save(function(err){
 		if(err){
 			console.log(JSON.stringify(err, undefined, 2));
@@ -1058,8 +1200,6 @@ var reverseState = function(trade, previousState, response){
 		response.send(500, 'Something bad happened, but we managed to reverse it!');
 	});
 };
-
-
 
 
 app.listen(port, function() {
