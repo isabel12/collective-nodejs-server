@@ -24,7 +24,7 @@ var port = process.env.PORT || 5000;
 // set up the server
 var app = express();
 app.use(express.logger());
-app.use(express.bodyParser());  // allows the app to read JSON from body
+app.use(express.bodyParser({uploadDir: '/tempImages'}));  // allows the app to read JSON from body
 
 
 // Makes connection asynchronously.  Mongoose will queue up database
@@ -431,34 +431,78 @@ app.get('/users', auth, function(request, response) {
 
 
 // method to upload a profile image
-app.post('/users/:id/uploadimage', auth, function(request, response){
-	var tempPath = request.files.file.path;
-	var targetPath = path.resolve('./images/users/profile/' + body.params.id + '.png');
+app.post('/users/:id/uploadImage', auth, function(request, response){
+	// var tempPath = request.files.file.path;
+	// var targetPath = path.resolve('./images/users/profile/' + body.params.id + '.png');
 
-	if (path.extname(req.files.file.name).toLowerCase() === '.png'){
-		fs.rename(tempPath, targetPath, function(err){
+	// if (path.extname(req.files.file.name).toLowerCase() === '.png'){
+	// 	fs.rename(tempPath, targetPath, function(err){
+			// if(err){
+			// 	console.log(err);
+			// 	response.send(500);
+			// 	return;
+			// }
+
+			// console.log('Image uploaded to ' + targetPath);
+			// response.send(204, 'Image uploaded to ' + targetPath);
+	// 	});
+	// } 
+
+	// else {
+	// 	fs.unlink(tempPath, function(err){
+	// 		if (err){
+	// 			throw err;
+	// 		}
+
+	// 		console.log('Only .png files are allowed!');
+	// 		response.send(400, 'Only .png files are allowed!');
+	// 	});
+	// }
+
+
+	var imagePath = './images/profile/kittens.jpg';
+	var targetPath = './images/profile/' + request.params.id + '.jpg';
+
+
+	fs.readFile(imagePath, function(err, data){
+		if(err){
+			console.log(err);
+			response.send(500);
+			return;
+		}
+
+		fs.writeFile(targetPath, data, function(err){
+
 			if(err){
 				console.log(err);
 				response.send(500);
 				return;
 			}
 
-			console.log('Image uploaded to ' + targetPath);
-			response.send(204, 'Image uploaded to ' + targetPath);
+			console.log('Uploaded image to ' + targetPath);
+			response.send(200, 'Uploaded image to ' + targetPath);
 		});
-	} 
+	});
 
-	else {
-		fs.unlink(tempPath, function(err){
-			if (err){
-				throw err;
-			}
+	// fs.rename(imagePath, targetPath, function(err){
+	// 	if(err){
+	// 		console.log(err);
+	// 		response.send(500);
+	// 		return;
+	// 	}
 
-			console.log('Only .png files are allowed!');
-			response.send(400, 'Only .png files are allowed!');
-		});
-	}
+	// 	console.log('Renamed image to ' + targetPath);
+	// 	response.send(200, 'Renamed image to ' + targetPath);
+	// });
+
 });
+
+
+app.get('/users/:id/getImage', function(request, response){
+	var imagePath = './images/profile/' + request.params.id + '.jpg';
+	response.sendfile(path.resolve(imagePath));
+});
+
 
 
 app.post('/imagetest', function(request, response){
