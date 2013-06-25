@@ -208,7 +208,7 @@ app.post('/getProfile/:id', auth, function(request, response){
 	try{
 		userId = mongoose.Types.ObjectId(request.params.id);
 	} catch(err){
-		response.send(404, 'Invalid id.  That user could not be found.');
+		response.send(400, 'Invalid id.  That user could not be found.');
 		return;
 	}
 
@@ -335,13 +335,13 @@ app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, respo
 	try{
 		revieweeId = mongoose.Types.ObjectId(request.params.userId);
 	} catch(err){
-		response.send(404, 'Invalid id. That user could not be found.');
+		response.send(400, 'Invalid id. That user could not be found.');
 		return;
 	}
 	try{
 		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
 	} catch(err){
-		response.send(404, 'Invalid id. That trade could not be found.');
+		response.send(400, 'Invalid id. That trade could not be found.');
 		return;
 	}
 
@@ -529,7 +529,7 @@ app.post('/users/:userId/getResources', auth, function(request, response){
 	try{
 		userId = mongoose.Types.ObjectId(request.params.userId);
 	} catch(err){
-		response.send(404, 'Invalid id. That resource could not be found.');
+		response.send(400, 'Invalid id. That resource could not be found.');
 		return;
 	}
 
@@ -557,7 +557,7 @@ app.post('/getResource/:id', auth, function(request, response){
 	try{
 		resourceId = mongoose.Types.ObjectId(request.params.id);
 	} catch(err){
-		response.send(404, 'Invalid id. That resource could not be found.');
+		response.send(400, 'Invalid id. That resource could not be found.');
 		return;
 	}
 
@@ -595,7 +595,7 @@ app.post('/updateResource/:id', auth, function(request, response){
 	try{
 		resourceId = mongoose.Types.ObjectId(request.params.id);
 	} catch(err){
-		response.send(404, 'Invalid id. That resource could not be found.');
+		response.send(400, 'Invalid id. That resource could not be found.');
 		return;
 	}
 
@@ -654,7 +654,7 @@ app.post('/deleteResource/:id', auth, function(request, response){
 	try{
 		resourceId = mongoose.Types.ObjectId(request.params.id);
 	} catch(err){
-		response.send(404, 'Invalid id. That resource could not be found.');
+		response.send(400, 'Invalid id. That resource could not be found.');
 		return;
 	}
 
@@ -910,7 +910,7 @@ app.post('/getTrade/:tradeId', auth, function(request, response){
 	try{
 		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
 	} catch(err){
-		response.send(404, 'Invalid id. That trade could not be found.');
+		response.send(400, 'Invalid id. That trade could not be found.');
 		return;
 	}
 
@@ -956,7 +956,7 @@ app.post('/trades/:tradeId/Actions', auth, function(request, response){
 	try{
 		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
 	} catch(err){
-		response.send(404, 'Invalid id. That trade could not be found.');
+		response.send(400, 'Invalid id. That trade could not be found.');
 		return;
 	}
 	
