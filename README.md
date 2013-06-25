@@ -30,6 +30,7 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 					- cancel
 					- agree
 					- disagree
+					- mark_as_failed
 					
 	
 	* requires 'Autheorization' headers
@@ -46,6 +47,9 @@ This method allows you to authenticate the email/password combination, and retur
 	{
 	  "postcode": "6021",
 	  "points": 0,
+	  "numItemsLent": 0,
+	  "numItemsBorrowed": 0,
+	  "blackMarks": 0,
 	  "lastName": "Broome-nicholson",
 	  "firstName": "Isabel",
 	  "email": "isabel.broomenicholson@gmail.com",
@@ -90,6 +94,21 @@ This method allows you to authenticate the email/password combination, and retur
 	
 
 ####Response
+	{
+	  "postcode": "6021",
+	  "points": 0,
+	  "numItemsLent": 0,
+	  "numItemsBorrowed": 0,
+	  "blackMarks": 0,
+	  "lastName": "Broome-nicholson",
+	  "firstName": "Isabel",
+	  "email": "isabel.broomenicholson@gmail.com",
+	  "city": "Wellington",
+	  "address": "Wooopsdfsdfie",
+	  "_id": "51bfc73c045b6e7812000002",
+	  "reviews": []
+	}	
+
 * 201 - if successful (may be changed to 204 later)
 * 400 - if field falidation failed.
 * 403 - if an account already exists.
@@ -102,16 +121,33 @@ This method allows you to authenticate the email/password combination, and retur
 	
 ####Response
 	{
-		"postcode": "6021",
-		"points": 0,
-		"lastName": "Broome-nicholson",
-		"firstName": "Isabel",
-		"email": "isabel.broomenicholson@gmail.com",
-		"city": "Wellington",
-		"address": "Wooopsdfsdfie",
-		"_id": "51bfc73c045b6e7812000002",
-		"reviews": []
-	}
+	  "id": "51c8d615e5ecced017000002",
+	  "email": "isabel.broomenicholson@gmail.com",
+	  "firstName": "Isabel",
+	  "lastName": "Broome-nicholson",
+	  "address": "Cool place on the hill",
+	  "city": "Wellington",
+	  "postcode": "6021",
+	  "rating": "0.00",
+	  "points": -4,
+	  "numItemsLent": 0,
+	  "numItemsBorrowed": 2,
+	  "blackMarks": 1,
+	  "reviews": [
+	    {
+	      "_id": "51c8e4c067d1ea9c10000002",
+	      "message": "Stole my stuff!",
+	      "score": 0,
+	      "date": "2013-06-25T00:30:56.024Z",
+	      "tradeId": "51c668d61e5272a40b000002",
+	      "reviewer": {
+	        "userId": "51c8d640e5ecced017000003",
+	        "lastName": "Pip",
+	        "firstName": "Jenny"
+	      }
+	    }
+	  ]
+	}	
 *	404 - if user doesn't exist.
 *	500 - if there was a server error.
 
@@ -169,6 +205,7 @@ Fields allowed to be changed are:
 		"_id": "51bfc73c045b6e7812000002",
 		"reviews": []
 	}
+	
 * 400 - if fields are not valid
 * 403 - if not your profile
 * 404 - if the user doesn't exist
@@ -180,7 +217,6 @@ Adds a review from you to the user with the given {userId}, regarding the trade 
 If the trade is still in progress, or you have already reviewed, you will not be able to add one.
 
 ####Request
-
 	POST '/users/{userId}/trades/{tradeId}/reviews'
 	{
 		"score": 5,
@@ -196,7 +232,6 @@ If the trade is still in progress, or you have already reviewed, you will not be
 ### List a Resource
 
 ####Request
-
 	POST '/users/{userId}/resources'
 	{
 		"type": "tools",
@@ -210,8 +245,7 @@ If the trade is still in progress, or you have already reviewed, you will not be
 	}
 
 ######'type'
-* Not locked down yet - will eventually check that it is one of the supported types
-* Automatically decapitalised
+* must be one of 'tools', 'land', 'plants', 'services'
 
 ######'points'
 * Must be between 1 and 5
@@ -224,7 +258,6 @@ If the trade is still in progress, or you have already reviewed, you will not be
 
 ####Response
 201 - created
-
 	{
 	  "type": "tools",
 	  "_id": "51c23719cf5903101a000002",
@@ -304,7 +337,7 @@ If the trade is still in progress, or you have already reviewed, you will not be
 ####Request
 	GET '/users/{userId}/resources'
 ####Response
-* 200 OK
+* 200 OK + list of resources
 * 500 - internal server error 
 
 ###Get a Resource
@@ -328,6 +361,7 @@ If the trade is still in progress, or you have already reviewed, you will not be
 {
 	"title": "Red Axe"
 }
+* Note: fields allowed to be changed are 'location', 'type', 'title', 'description', 'points'
 
 ####Response
 	{
@@ -388,14 +422,12 @@ If the trade is still in progress, or you have already reviewed, you will not be
 	
 ###Add a message
 ####Request
-
 	POST '/trades/{tradeId}/Actions?action=add_message'
 	{
 		"message": "Hey yeah thats fine.  See you then!"
 	}
 	
 ####Response
-
 	{
 	  "date": "2013-06-23T11:01:26.967Z",
 	  "message": "Hey yeah thats fine.  See you then!",
@@ -423,6 +455,8 @@ If the trade is still in progress, or you have already reviewed, you will not be
 	POST '/trades/{tradeId}/Actions?action=agree'
 	
 	POST '/trades/{tradeId}/Actions?action=disagree'
+
+	POST '/trades/{tradeId}/Actions?action=mark_as_failed'
 
 ####Response
 
