@@ -76,6 +76,29 @@ RESPONSE - 200 OK
 
 
 
+Edit a profile
+//=======================================================================================================================================================================
+
+REQUEST - PUT /users/{userId}
+ PUT '/user/{id}'
+{
+  	"firstName": "Isabel",
+ 	"lastName":"Broome-Nicholson",
+  	"location":{
+ 	 	"lat": 13.4,
+ 		"lon": 123.3
+ 	},
+ 	"address": "Cool place on the hill",
+  	"city": "Wellington",
+ 	"postcode":"6021"
+ }
+
+RESPONSE - 204 No content   "Successfully updated"
+
+RESPONSE - 404 not found  "No trade with that ID exists"
+
+RESPONSE - 401 unauthorised  "Session invalid.""
+
 
 
 Add a review
@@ -88,6 +111,8 @@ REQUEST - POST /users/{userId}/trades/{tradeId}/reviews
 }
 
 RESPONSE - 204 no content
+
+
 
 
 
@@ -408,29 +433,4 @@ Get resources offered by a person
 REQUEST - GET /users/{userId}/resources  <--- see line 69ish for details of response^
 
 
-
-Edit a profile
-//=======================================================================================================================================================================
-
-REQUEST - PUT /users/{userId}
- PUT '/user/{id}'
-{
-  	"firstName": "Isabel",
- 	"lastName":"Broome-Nicholson",
-  	"location":{
- 	 	"lat": 13.4,
- 		"lon": 123.3
- 	},
- 	"address": "Cool place on the hill",
-  	"city": "Wellington",
- 	"postcode":"6021"
- }
-
-RESPONSE - 204 No content   "Successfully updated"
-
-RESPONSE - 404 not found  "No trade with that ID exists"
-
-RESPONSE - 401 unauthorised  "Session invalid/expired"
-
-RESPONSE - something to do with trying to edit fields you can't do  403 forbidden?
 

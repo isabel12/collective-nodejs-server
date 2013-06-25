@@ -6,6 +6,7 @@ var path = require("path");
 var models = require('./models');
 var tradeLogic = require('./tradeLogic');
 var jsonValidation = require('./jsonValidation');
+var im = require('imagemagick');
 var User, Review, Resource, Trade, Message, ProfileUpdate;  // mongoose schemas
 var UpdateProfileSchema, RegisterProfileSchema, FilterResourceSchema, AddResourceSchema, UpdateResourceSchema, validateJSON;// validation schemas
 
@@ -207,7 +208,7 @@ app.post('/getProfile/:id', auth, function(request, response){
 	try{
 		userId = mongoose.Types.ObjectId(request.params.id);
 	} catch(err){
-		response.send(404, 'That user could not be found.');
+		response.send(404, 'Invalid id.  That user could not be found.');
 		return;
 	}
 
@@ -334,13 +335,13 @@ app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, respo
 	try{
 		revieweeId = mongoose.Types.ObjectId(request.params.userId);
 	} catch(err){
-		response.send(404, 'That user could not be found.');
+		response.send(404, 'Invalid id. That user could not be found.');
 		return;
 	}
 	try{
 		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
 	} catch(err){
-		response.send(404, 'That trade could not be found.');
+		response.send(404, 'Invalid id. That trade could not be found.');
 		return;
 	}
 
@@ -460,6 +461,15 @@ app.post('/users/:id/uploadimage', auth, function(request, response){
 });
 
 
+app.post('/imagetest', function(request, response){
+
+	im.identify('./kittens.jpg', function(err, features){
+	  if (err) console.log(err.trace)
+	  console.log(features);
+	  // { format: 'JPEG', width: 3904, height: 2622, depth: 8 }
+	});
+});
+
 // {
 //   "type": "tools",
 //   "title": "Axe",
@@ -519,7 +529,7 @@ app.post('/users/:userId/getResources', auth, function(request, response){
 	try{
 		userId = mongoose.Types.ObjectId(request.params.userId);
 	} catch(err){
-		response.send(404, 'That resource could not be found.');
+		response.send(404, 'Invalid id. That resource could not be found.');
 		return;
 	}
 
@@ -547,7 +557,7 @@ app.post('/getResource/:id', auth, function(request, response){
 	try{
 		resourceId = mongoose.Types.ObjectId(request.params.id);
 	} catch(err){
-		response.send(404, 'That resource could not be found.');
+		response.send(404, 'Invalid id. That resource could not be found.');
 		return;
 	}
 
@@ -585,7 +595,7 @@ app.post('/updateResource/:id', auth, function(request, response){
 	try{
 		resourceId = mongoose.Types.ObjectId(request.params.id);
 	} catch(err){
-		response.send(404, 'That resource could not be found.');
+		response.send(404, 'Invalid id. That resource could not be found.');
 		return;
 	}
 
@@ -644,7 +654,7 @@ app.post('/deleteResource/:id', auth, function(request, response){
 	try{
 		resourceId = mongoose.Types.ObjectId(request.params.id);
 	} catch(err){
-		response.send(404, 'That resource could not be found.');
+		response.send(404, 'Invalid id. That resource could not be found.');
 		return;
 	}
 
@@ -843,34 +853,6 @@ app.post('/addTrade', auth, function(request, response){
 });
 
 
-app.post('/getTrades', auth, function(request, response){
-	
-
-	var dateString = '2013-06-25T07:34:31.555Z'
-
-	var date = new Date();
-	date.setISO8601(dateString);
-	console.log(date);
-
-
-	Trade.find({'lastUpdated':{$gte: date}}, function(err, trades){
-		if(err){
-			console.log(JSON.stringify(err, undefined, 2));
-			response.send(500, JSON.stringify(err, undefined, 2));
-			return;
-		}	
-
-		var result = new Array();
-		for (var i = 0; i < trades.length; i++) {
-			result[i] = trades[i].returnType;
-		};
-
-		response.send(JSON.stringify(result, undefined, 2));
-	});
-
-});
-
-
 app.post('/users/:userId/getTrades', auth, function(request, response){
 	// check they are your trades
 	var userId = request.user._id;
@@ -928,7 +910,7 @@ app.post('/getTrade/:tradeId', auth, function(request, response){
 	try{
 		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
 	} catch(err){
-		response.send(404, 'That trade could not be found.');
+		response.send(404, 'Invalid id. That trade could not be found.');
 		return;
 	}
 
@@ -974,7 +956,7 @@ app.post('/trades/:tradeId/Actions', auth, function(request, response){
 	try{
 		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
 	} catch(err){
-		response.send(404, 'That trade could not be found.');
+		response.send(404, 'Invalid id. That trade could not be found.');
 		return;
 	}
 	
