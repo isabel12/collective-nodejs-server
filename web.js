@@ -22,42 +22,42 @@ var port = process.env.PORT || 5000;
 
 
 
-var newAuth = function(request, response, next){
+// var newAuth = function(request, response, next){
 
-	var email = request.query.email;
-	var pass = request.query.pass;
+// 	var email = request.query.email;
+// 	var pass = request.query.pass;
 
-	console.log(email + pass);
+// 	console.log(email + pass);
 
-	User.findOne({'email':email}, function(err, user){
-		if(err){
-			response.send(500, err.message);
-			return;
-		}
+// 	User.findOne({'email':email}, function(err, user){
+// 		if(err){
+// 			response.send(500, err.message);
+// 			return;
+// 		}
 
-		if (!user){
-			response.send(401, 'No user exists.');
-			return;
-		} 
+// 		if (!user){
+// 			response.send(401, 'No user exists.');
+// 			return;
+// 		} 
 				
-		var authenticated =  user.authenticate(pass);
-		if (!authenticated){
-			response.send(401, 'No user exists.');
-			return;
-		}
+// 		var authenticated =  user.authenticate(pass);
+// 		if (!authenticated){
+// 			response.send(401, 'No user exists.');
+// 			return;
+// 		}
 
-		// yay authenticated
-		request.user = user;
-		next();	
-	}); 
-}
+// 		// yay authenticated
+// 		request.user = user;
+// 		next();	
+// 	}); 
+// }
 
 
 
 
 // set up the server
 var app = express();
-app.use(newAuth);
+//app.use(newAuth);
 app.use(express.logger());
 app.use(express.limit('1mb'));
 app.use(express.bodyParser({uploadDir: '/tempImages'}));  // allows the app to read JSON from body
@@ -138,19 +138,6 @@ var adminAuth = express.basicAuth(function(user, pass, callback) {
 });
 
 
-var newAuth = function(request, response, next){
-
-	var email = request.query.email;
-	var pass = request.query.pass;
-
-	console.log(email + pass);
-	next();
-
-}
-
-
-
-
 // The API end points
 //--------------------------------------------------------------------------------------------------------------
 
@@ -162,7 +149,7 @@ app.get('/', function(request, response){
 
 // GET '/authenticate'
 // This method returns the 
-app.post('/authenticate', newAuth, function(request, response){
+app.post('/authenticate', auth, function(request, response){
 	var profile = request.user.returnType;
 	profile.rating = request.user.rating;
 
