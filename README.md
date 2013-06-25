@@ -22,6 +22,8 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 	POST*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
 	POST*		'/addTrade'												(Requests a new trade)
 	POST*		'/getTrades'											(test method for getting all active trades)
+	POST*		'/getTrade/{tradeId}'									(Gets the trade)
+	POST*		'/getTrade/{tradeId}?currVer=2'							(Gets the trade if there is a newer version)
 	POST*		'/trades/{tradeId}/Actions								(Method to perform all actions on a trade)
 					- add_message
 					- accept
@@ -462,3 +464,69 @@ If the trade is still in progress, or you have already reviewed, you will not be
 
 * 200 - Currently returns the trade with all messages (need to change this)	
 * 403 - if not allowed to do that action.
+
+
+### Get an individual trade
+This method takes an optional parameter 'currVer', which is a positive integer.  This version is specified by the 'version' field on the trade.
+* If no parameter specified, or not up to date, returns the trade.
+* Otherwise returns an empty body.
+
+####Request
+	POST '/getTrade/{tradeId}'
+	{}
+
+	POST '/getTrade/{tradeId}?currVer={versionNumber}'
+	{}
+	
+####Response
+######If out of date, or no parameter specified:
+	{
+	  "resourceId": "51c8d791336bb31414000003",
+	  "id": "51c668d61e5272a40b000002",
+	  "borrower": {
+	    "firstName": "Isabel",
+	    "lastName": "Broome-nicholson",
+	    "userId": "51c8d615e5ecced017000002"
+	  },
+	  "owner": {
+	    "firstName": "Jenny",
+	    "lastName": "Pip",
+	    "userId": "51c8d640e5ecced017000003"
+	  },
+	  "state": "p_complete_owner",
+	  "ownerActions": [
+	    "add_message"
+	  ],
+	  "borrowerActions": [
+	    "agree",
+	    "disagree",
+	    "add_message"
+	  ],
+	  "messages": [
+	    {
+	      "date": "2013-06-25T05:31:31.555Z",
+	      "message": "wwooooo",
+	      "_id": "51c92b338df2878412000002",
+	      "sender": {
+	        "firstName": "Isabel",
+	        "lastName": "Broome-nicholson",
+	        "userId": "51c8d615e5ecced017000002"
+	      }
+	    },
+	    {
+	      "date": "2013-06-25T05:32:06.029Z",
+	      "message": "wwooooo",
+	      "_id": "51c92b568df2878412000003",
+	      "sender": {
+	        "firstName": "Isabel",
+	        "lastName": "Broome-nicholson",
+	        "userId": "51c8d615e5ecced017000002"
+	      }
+	    }
+	  ],
+	  "__v": 2
+	}
+	
+######if up to date:
+	{}
+	
