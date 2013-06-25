@@ -213,7 +213,7 @@ app.post('/getProfile/:id', auth, function(request, response){
 	}
 
 	// find the user
-	var query = User.findById(request.params.id, function(err, user) {
+	var query = User.findbyId(request.params.id, function(err, user) {
 
 		if(err){
 			console.log(err);
@@ -229,7 +229,7 @@ app.post('/getProfile/:id', auth, function(request, response){
 		var profile = user.returnType;
 		profile.rating = user.rating;
 
-		response.send(JSON.stringify(profile, undefined, 2)); 		
+		response.send(profile); 		
 	});
 });
 
