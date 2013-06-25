@@ -338,7 +338,7 @@ app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, respo
 		return;
 	}
 	try{
-		trade = mongoose.Types.ObjectId(request.params.tradeId);
+		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
 	} catch(err){
 		response.send(404, 'That trade could not be found.');
 		return;
@@ -761,14 +761,12 @@ app.post('/getResourceLocations', auth, function(request, response){
 
 
 // {
-// 	  'resourceId': "51c536476f2b4a7016000005"
+// 	  "resourceId": "51c8d791336bb31414000003"
 // }
 app.post('/addTrade', auth, function(request, response){
 
 	var resourceId = request.body.resourceId;
 	var me = request.user;
-
-	console.log('got here');
 
 	// validate input
 	try{
@@ -797,6 +795,12 @@ app.post('/addTrade', auth, function(request, response){
 		// check you aren't the owner
 		if(resource && resource.owner.toString() == me._id.toString()){
 			response.send(403, 'You cannot borrow your own resource.');
+			return;
+		}
+
+		// check you don't have too few points
+		if(me.points <= -20){
+			response.send(403, 'Sorry, you cannot go below -20 points.  You should give back to the community :)');
 			return;
 		}
 
@@ -1159,6 +1163,7 @@ var transferPoints = function(request, response, trade, desiredState){
 			});
 		});
 	});
+
 };
 
 
