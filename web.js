@@ -864,6 +864,58 @@ app.post('/getTrades', auth, function(request, response){
 });
 
 
+
+app.post('/getTrade/:tradeId', auth, function(request, response){
+
+	var version = request.query.currVer ? Number(request.query.currVer): null;
+	console.log(version);
+	if(version == NaN){
+		response.send(400, 'Query paramater "currVer" has to be an integer.');
+	}
+
+
+	tradeId = mongoose.Types.ObjectId(request.params.tradeId);
+	try{
+		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
+	} catch(err){
+		response.send(404, 'That trade could not be found.');
+		return;
+	}
+
+	Trade.findById(tradeId, function(err, trade){
+		if(err){
+			console.log(JSON.stringify(err, undefined, 2));
+			response.send(500, JSON.stringify(err, undefined, 2));
+			return;
+		}	
+
+		if(!trade){
+			response.send(404, 'That trade could not be found.');
+			return;
+		}
+
+		// if no version was specified
+		if(version == null ){
+			response.send(200, JSON.stringify(trade.returnType, undefined, 2));
+			return;
+		}
+
+		// if a version was specified, and they are out of date
+		var currentVersion = trade.__v ? trade.__v : 0;
+		if(currentVersion > version){
+			response.send(200, JSON.stringify(trade.returnType, undefined, 2));
+			return;
+		}
+
+		// else they are up to date
+		response.send(200, {});
+		return;
+	});
+
+});
+
+
+
 // {
 // 	"message": "Hey yeah thats fine.  See you then!"
 // }
