@@ -21,9 +21,45 @@ process.env.MONGOHQ_URL ||
 var port = process.env.PORT || 5000;
 
 
+
+var newAuth = function(request, response, next){
+
+	var email = request.query.email;
+	var pass = request.query.pass;
+
+	console.log(email + pass);
+
+	User.findOne({'email':email}, function(err, user){
+		if(err){
+			response.send(500, err.message);
+			return;
+		}
+
+		if (!user){
+			response.send(401, 'No user exists.');
+			return;
+		} 
+				
+		var authenticated =  user.authenticate(pass);
+		if (!authenticated){
+			response.send(401, 'No user exists.');
+			return;
+		}
+
+		// yay authenticated
+		request.user = user;
+		next();	
+	}); 
+}
+
+
+
+
 // set up the server
 var app = express();
+app.use(newAuth);
 app.use(express.logger());
+app.use(express.limit('1mb'));
 app.use(express.bodyParser({uploadDir: '/tempImages'}));  // allows the app to read JSON from body
 
 
@@ -102,6 +138,18 @@ var adminAuth = express.basicAuth(function(user, pass, callback) {
 });
 
 
+var newAuth = function(request, response, next){
+
+	var email = request.query.email;
+	var pass = request.query.pass;
+
+	console.log(email + pass);
+	next();
+
+}
+
+
+
 
 // The API end points
 //--------------------------------------------------------------------------------------------------------------
@@ -114,7 +162,7 @@ app.get('/', function(request, response){
 
 // GET '/authenticate'
 // This method returns the 
-app.post('/authenticate', auth, function(request, response){
+app.post('/authenticate', newAuth, function(request, response){
 	var profile = request.user.returnType;
 	profile.rating = request.user.rating;
 
@@ -213,7 +261,7 @@ app.post('/getProfile/:id', auth, function(request, response){
 	}
 
 	// find the user
-	var query = User.findbyId(request.params.id, function(err, user) {
+	var query = User.findById(request.params.id, function(err, user) {
 
 		if(err){
 			console.log(err);
@@ -431,88 +479,84 @@ app.get('/users', auth, function(request, response) {
 
 
 // method to upload a profile image
-app.post('/users/:id/uploadImage', auth, function(request, response){
-	// var tempPath = request.files.file.path;
-	// var targetPath = path.resolve('./images/users/profile/' + body.params.id + '.png');
+app.post('/uploadProfileImage/:id', auth, function(request, response){
 
-	// if (path.extname(req.files.file.name).toLowerCase() === '.png'){
-	// 	fs.rename(tempPath, targetPath, function(err){
-			// if(err){
-			// 	console.log(err);
-			// 	response.send(500);
-			// 	return;
-			// }
+	// first check it is your profile
+	if(request.params.id != request.user.id){
+		response.send(403, 'You can only upload images for your own profile.');
+		return;
+	}
 
-			// console.log('Image uploaded to ' + targetPath);
-			// response.send(204, 'Image uploaded to ' + targetPath);
-	// 	});
-	// } 
+	var tempPath = request.files.file.path;
+	var targetPath = path.resolve('./images/profile/' + body.params.id + '.png');
 
-	// else {
-	// 	fs.unlink(tempPath, function(err){
-	// 		if (err){
-	// 			throw err;
-	// 		}
-
-	// 		console.log('Only .png files are allowed!');
-	// 		response.send(400, 'Only .png files are allowed!');
-	// 	});
-	// }
-
-
-	var imagePath = './images/profile/kittens.jpg';
-	var targetPath = './images/profile/' + request.params.id + '.jpg';
-
-
-	fs.readFile(imagePath, function(err, data){
-		if(err){
-			console.log(err);
-			response.send(500);
-			return;
-		}
-
-		fs.writeFile(targetPath, data, function(err){
-
+	if (path.extname(req.files.file.name).toLowerCase() === '.png'){
+		fs.rename(tempPath, targetPath, function(err){
 			if(err){
 				console.log(err);
 				response.send(500);
 				return;
 			}
 
-			console.log('Uploaded image to ' + targetPath);
-			response.send(200, 'Uploaded image to ' + targetPath);
+			console.log('Image uploaded to ' + targetPath);
+			response.send(204, 'Image uploaded to ' + targetPath);
 		});
-	});
+	} 
 
-	// fs.rename(imagePath, targetPath, function(err){
+	else {
+		fs.unlink(tempPath, function(err){
+			if (err){
+				throw err;
+			}
+
+			console.log('Only .png files are allowed!');
+			response.send(400, 'Only .png files are allowed!');
+		});
+	}
+
+
+	// var imagePath = './images/profile/kittens.jpg';
+	// var targetPath = './images/profile/' + request.params.id + '.jpg';
+
+
+	// fs.readFile(imagePath, function(err, data){
 	// 	if(err){
 	// 		console.log(err);
 	// 		response.send(500);
 	// 		return;
 	// 	}
 
-	// 	console.log('Renamed image to ' + targetPath);
-	// 	response.send(200, 'Renamed image to ' + targetPath);
+	// 	fs.writeFile(targetPath, data, function(err){
+
+	// 		if(err){
+	// 			console.log(err);
+	// 			response.send(500);
+	// 			return;
+	// 		}
+
+	// 		console.log('Uploaded image to ' + targetPath);
+	// 		response.send(200, 'Uploaded image to ' + targetPath);
+	// 	});
 	// });
 
 });
 
 
-app.get('/users/:id/getImage', function(request, response){
-	var imagePath = './images/profile/' + request.params.id + '.jpg';
+app.get('/getProfileImage/:id', auth, function(request, response){
+	var imagePath = './images/profile/' + request.params.id + '.png';
+
+	response.sendfile(path.resolve(imagePath));
+});
+
+
+app.get('/getResourceImage/:resourceId', auth, function(request, response){
+	var imagePath = './images/resource/' + request.params.resourceId + '.png';
+
 	response.sendfile(path.resolve(imagePath));
 });
 
 
 
-app.post('/imagetest', function(request, response){
-
-	im.identify('./kittens.jpg', function(err, features){
-	  if (err) console.log(err.trace)
-	  console.log(features);
-	  // { format: 'JPEG', width: 3904, height: 2622, depth: 8 }
-	});
-});
 
 // {
 //   "type": "tools",
