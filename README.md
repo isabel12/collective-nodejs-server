@@ -13,6 +13,8 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 	POST 		'/register' 											(Register)
 	POST*		'/getProfile/{userId}' 									(Gets a users profile)
 	POST*		'/updateProfile/{userId}' 								(Updates the profile)
+	POST*		'/uploadProfileImage/{userId}'							(Uploads a profile image)
+	POST*		'/getProfileImage/{userId}'								(Gets the profile image)
 	POST* 		'/users/{userId}/trades/{tradeId}/reviews' 				(Adds a review)
 	POST* 		'/users/{userId}/addResource'  							(Adds a resource)
 	POST* 		'/users/{userId}/getResources'  						(Gets all the users listed resources)
@@ -20,6 +22,8 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 	POST* 		'/getResource/{resourceId}'  							(Returns the given resource)
 	POST* 		'/updateResource/{resourceId}'  						(Updates the given resource)
 	POST*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
+	POST*		'/uploadResourceImage/{resourceId}'						(Uploads a resource image)
+	POST*		'/getResourceImage/{resourceId}'						(Gets the resource image)
 	POST*		'/addTrade'												(Requests a new trade)
 	POST*		'/getTrade/{tradeId}'									(Gets the trade)
 	POST*		'/users/{userId}/getTrades'								(Gets all the user's trades)
@@ -36,7 +40,7 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 					- mark_as_failed
 					
 	
-	* requires 'Autheorization' headers
+	* requires 'Authorization' headers
 
 ## API Method Details
 
@@ -544,3 +548,91 @@ This method takes an optional parameter 'currVer', which is a positive integer. 
 * 200 with list of trades
 * 403 if not your account
 * 400 if date string isn't valid
+* 
+
+### Upload a Profile image
+This method allows the upload of an image as a base64 string.  The request must be within 200kb, or it will be rejected.
+If the image already exists, the method will overwrite it.
+
+####Request
+	POST '/uploadProfileImage/{userId}'
+	{
+		"image": <the image string>,
+		"hash": <an MD5 hash of the image>
+	}
+
+####Response
+* 204 - no content if successful
+* 403 - if not your profile
+* 400 - if {userId} is not valid
+* 500 - server error
+* 413 - image is too large
+
+
+### Get a Profile image
+This method allows you to get the profile image as base64 string.  The method takes an optional 'hash' query parameter which is an MD5 hash of the string.  
+The method will return the image string if there is no hash parameter, or the hash parameter does not match the image in the databse.
+Otherwise it will return an empty object.
+
+####Request
+	POST '/getProfileImage/{userId}'
+	{}
+	
+	POST '/getProfileImage/{userId}?hash=234sldkj234sdf334'
+	{}
+	
+####Response
+######If not up to date:
+	200 + <image string>
+	
+######If up to date:
+	200 + {}
+	
+* 400 - userId is invalid
+* 403 - not your profile
+* 404 - if image not found
+* 500 - server error
+
+### Upload a Resource image
+This method allows the upload of an image as a base64 string.  The request must be within 200kb, or it will be rejected.
+If the image already exists, the method will overwrite it.
+
+####Request
+	POST '/uploadResourceImage/{resourceId}'
+	{
+		"image": <the image string>,
+		"hash": <an MD5 hash of the image>
+	}
+
+####Response
+* 204 - no content if successful
+* 400 - if {resourceId} is not valid
+* 403 - if not your resource
+* 404 - if resource not found
+* 500 - server error
+* 413 - image is too large
+
+
+### Get a Resource image
+This method allows you to get the resource image as base64 string.  The method takes an optional 'hash' query parameter which is an MD5 hash of the string.  
+The method will return the image string if there is no hash parameter, or the hash parameter does not match the image in the databse.
+Otherwise it will return an empty object.
+
+####Request
+	POST '/getResourceImage/{resourceId}'
+	{}
+	
+	POST '/getResourceImage/{resourceId}?hash=234sldkj234sdf334'
+	{}
+	
+####Response
+######If not up to date:
+	200 + <image string>
+	
+######If up to date:
+	200 + {}
+	
+* 403 - not your resource
+* 404 - if image not found
+* 400 - resourceId is invalid
+* 500 - server error
