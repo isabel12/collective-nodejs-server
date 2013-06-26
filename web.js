@@ -264,7 +264,7 @@ app.post('/getProfile/:id', auth, function(request, response){
 		var profile = user.returnType;
 		profile.rating = user.rating;
 
-		response.send(profile); 		
+		response.send(JSON.stringify(profile, undefined, 2)); 		
 	});
 });
 
