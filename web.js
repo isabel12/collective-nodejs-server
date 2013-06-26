@@ -529,6 +529,71 @@ app.post('/uploadProfileImage/:id', auth, function(request, response){
 });
 
 
+
+// method to upload a profile image
+app.post('/uploadResourceImage/:id', auth, function(request, response){
+
+	// first check it is your profile
+	if(request.params.id != request.user.id){
+		response.send(403, 'You can only upload images for your own profile.');
+		return;
+	}
+
+	var tempPath = request.files.file.path;
+	var targetPath = path.resolve('./images/profile/' + body.params.id + '.png');
+
+	if (path.extname(req.files.file.name).toLowerCase() === '.png'){
+		fs.rename(tempPath, targetPath, function(err){
+			if(err){
+				console.log(err);
+				response.send(500);
+				return;
+			}
+
+			console.log('Image uploaded to ' + targetPath);
+			response.send(204, 'Image uploaded to ' + targetPath);
+		});
+	} 
+
+	else {
+		fs.unlink(tempPath, function(err){
+			if (err){
+				throw err;
+			}
+
+			console.log('Only .png files are allowed!');
+			response.send(400, 'Only .png files are allowed!');
+		});
+	}
+
+
+	// var imagePath = './images/profile/kittens.jpg';
+	// var targetPath = './images/profile/' + request.params.id + '.jpg';
+
+
+	// fs.readFile(imagePath, function(err, data){
+	// 	if(err){
+	// 		console.log(err);
+	// 		response.send(500);
+	// 		return;
+	// 	}
+
+	// 	fs.writeFile(targetPath, data, function(err){
+
+	// 		if(err){
+	// 			console.log(err);
+	// 			response.send(500);
+	// 			return;
+	// 		}
+
+	// 		console.log('Uploaded image to ' + targetPath);
+	// 		response.send(200, 'Uploaded image to ' + targetPath);
+	// 	});
+	// });
+
+});
+
+
 app.post('/getProfileImage/:id', auth, function(request, response){
 	var imagePath = './images/profile/' + request.params.id + '.png';
 
@@ -536,7 +601,7 @@ app.post('/getProfileImage/:id', auth, function(request, response){
 });
 
 
-app.post('/getResourceImage/:resourceId', auth, function(request, response){
+app.get('/getResourceImage/:resourceId', auth, function(request, response){
 	var imagePath = './images/resource/' + request.params.resourceId + '.png';
 
 	response.sendfile(path.resolve(imagePath));
