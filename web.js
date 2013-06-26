@@ -274,7 +274,7 @@ app.post('/uploadProfileImage/:id', auth, function(request, response){
 				return;
 			}
 
-			response.send(200, image);
+			response.send(204);
 		});
 	});
 });
@@ -369,7 +369,7 @@ app.post('/uploadResourceImage/:id', auth, function(request, response){
 					return;
 				}
 
-				response.send(200, image);
+				response.send(204);
 			});
 		});
 	});
