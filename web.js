@@ -7,7 +7,7 @@ var models = require('./models');
 var tradeLogic = require('./tradeLogic');
 var jsonValidation = require('./jsonValidation');
 var im = require('imagemagick');
-var User, Review, Resource, Trade, Message, ProfileUpdate, ProfileImage;  // mongoose schemas
+var User, Review, Resource, Trade, Message, ProfileUpdate, ProfileImage, ResourceImage;  // mongoose schemas
 var UpdateProfileSchema, RegisterProfileSchema, FilterResourceSchema, AddResourceSchema, UpdateResourceSchema, validateJSON;// validation schemas
 
 
@@ -83,6 +83,7 @@ models.defineModels(mongoose, function() {
 	Trade = mongoose.model('Trade');
 	Message = mongoose.model('Message');
 	ProfileImage = mongoose.model('ProfileImage');
+	ResourceImage = mongoose.model('ResourceImage');
 })
 
 // import the validation schemas
@@ -260,7 +261,6 @@ app.post('/uploadProfileImage/:id', auth, function(request, response){
 
 		// either create a new one, or save the existing one.
 		if(!image){
-			console.log('No image found');
 			image = new ProfileImage(request.body);
 		} else {
 			image.image = request.body.image;
@@ -283,7 +283,7 @@ app.post('/uploadProfileImage/:id', auth, function(request, response){
 app.post('/getProfileImage/:id', auth, function(request, response){
 	var userId;
 	try{
-		userId = request.params.id;
+		userId = mongoose.Types.ObjectId(request.params.id);
 	} catch(err){
 		response.send(400, 'Parameter "id" is not valid');
 		return;
@@ -312,6 +312,103 @@ app.post('/getProfileImage/:id', auth, function(request, response){
 		response.send(200, image.image);
 	});
 });
+
+
+app.post('/uploadResourceImage/:id', auth, function(request, response){
+	var resourceId;
+	try{
+		resourceId = mongoose.Types.ObjectId(request.params.id);
+	} catch(err){
+		response.send(400, 'Parameter "id" is not valid');
+		return;
+	}
+
+	// get the resource
+	Resource.findById(resourceId, function(err, resource){
+		if (err){
+			console.log(err);
+			response.send(500, err);
+			return;
+		}
+
+		// make sure it is your resource
+		console.log(resource.owner);
+		console.log(request.user._id);
+		if(resource && resource.owner.toString() != request.user._id.toString()){
+			response.send(403, 'You can only upload images for resources you own.');
+			return;
+		}
+
+		// check it exists
+		if(!resource){
+			response.send(404, 'Resource not found.');
+			return;
+		}
+
+		// find the image
+		ResourceImage.findOne({'resourceId': resourceId}, function(err, image){
+			if (err){
+				console.log(err);
+				response.send(500, err);
+				return;
+			}
+
+			// either create a new one, or save the existing one.
+			if(!image){
+				request.body.resourceId = resourceId;
+				image = new ResourceImage(request.body);
+			} else {
+				image.image = request.body.image;
+				image.hash = request.body.hash;
+			}
+
+			image.save(function(err){
+				if (err){
+					console.log(err);
+					response.send(500, err);
+					return;
+				}
+
+				response.send(200, image);
+			});
+		});
+	});
+});
+
+app.post('/getResourceImage/:id', auth, function(request, response){
+	var resourceId;
+	try{
+		resourceId = mongoose.Types.ObjectId(request.params.id);
+	} catch(err){
+		response.send(400, 'Parameter "id" is not valid');
+		return;
+	}
+
+	var hash = request.query.hash;
+
+	ResourceImage.findOne({'resourceId': resourceId}, function(err, image){
+		if (err){
+			console.log(err);
+			response.send(500, err);
+			return;
+		}
+
+		if(!image){
+			response.send(404, 'Image not found.');
+			return;	
+		}
+
+		// return nothing 
+		if(image.hash == hash){
+			response.send(200, {});
+			return;
+		}
+
+		response.send(200, image.image);
+	});
+});
+
+
 
 
 // GET '/user/{id}'
