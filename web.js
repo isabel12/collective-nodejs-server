@@ -529,14 +529,14 @@ app.post('/uploadProfileImage/:id', auth, function(request, response){
 });
 
 
-app.get('/getProfileImage/:id', auth, function(request, response){
+app.post('/getProfileImage/:id', auth, function(request, response){
 	var imagePath = './images/profile/' + request.params.id + '.png';
 
 	response.sendfile(path.resolve(imagePath));
 });
 
 
-app.get('/getResourceImage/:resourceId', auth, function(request, response){
+app.post('/getResourceImage/:resourceId', auth, function(request, response){
 	var imagePath = './images/resource/' + request.params.resourceId + '.png';
 
 	response.sendfile(path.resolve(imagePath));

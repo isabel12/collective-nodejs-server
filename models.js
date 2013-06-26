@@ -80,7 +80,7 @@ function defineModels(mongoose, fn) {
     .get(function(){
       var value = {
         type: this.type, 
-        id:this._id, 
+        _id:this._id, 
         title: this.title,
         description: this.description,
         owner: this.owner,
@@ -171,7 +171,7 @@ function defineModels(mongoose, fn) {
     .get(function(){
       return {
         resourceId: this.resource,
-        id: this._id,
+        _id: this._id,
         borrower: this.borrower,
         owner: this.owner,
         state: this.state,
@@ -238,7 +238,7 @@ function defineModels(mongoose, fn) {
   UserSchema.virtual('returnType')
   .get(function(){
     var value = {
-      id: this._id,
+      _id: this._id,
       email: this.email,
       firstName: this.firstName,
       lastName: this.lastName,
