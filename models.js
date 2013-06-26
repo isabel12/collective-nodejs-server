@@ -232,7 +232,7 @@ function defineModels(mongoose, fn) {
       for (var i = 0; i < this.reviews.length; i++) {
         totalRating += this.reviews[i].score ? this.reviews[i].score : 0;
       };
-      return (totalRating / this.reviews.length).toFixed(2);
+      return this.reviews.length == 0 ? totalRating : (totalRating / this.reviews.length).toFixed(2);
     });  
 
   UserSchema.virtual('returnType')
