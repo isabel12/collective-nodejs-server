@@ -59,7 +59,7 @@ var port = process.env.PORT || 5000;
 var app = express();
 //app.use(newAuth);
 app.use(express.logger());
-app.use(express.limit('1mb'));
+app.use(express.limit('200kb'));
 app.use(express.bodyParser());  // allows the app to read JSON from body
 
 
