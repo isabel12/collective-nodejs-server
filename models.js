@@ -214,6 +214,14 @@ function defineModels(mongoose, fn) {
     'salt': String
   });
 
+
+  var ProfileImageSchema = new Schema({
+    'userId': Schema.Types.ObjectId,
+    'image': String,
+    'hash': String
+  });
+
+
   UserSchema.virtual('id')
     .get(function() {
       return this._id.toHexString();
@@ -284,6 +292,7 @@ function defineModels(mongoose, fn) {
   mongoose.model('Resource', ResourceSchema);
   mongoose.model('Trade', TradeSchema);
   mongoose.model('Message', MessageSchema);
+  mongoose.model('ProfileImage', ProfileImageSchema);
 
   // callback 
   fn();

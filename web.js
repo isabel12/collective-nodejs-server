@@ -7,7 +7,7 @@ var models = require('./models');
 var tradeLogic = require('./tradeLogic');
 var jsonValidation = require('./jsonValidation');
 var im = require('imagemagick');
-var User, Review, Resource, Trade, Message, ProfileUpdate;  // mongoose schemas
+var User, Review, Resource, Trade, Message, ProfileUpdate, ProfileImage;  // mongoose schemas
 var UpdateProfileSchema, RegisterProfileSchema, FilterResourceSchema, AddResourceSchema, UpdateResourceSchema, validateJSON;// validation schemas
 
 
@@ -82,6 +82,7 @@ models.defineModels(mongoose, function() {
 	Resource = mongoose.model('Resource');
 	Trade = mongoose.model('Trade');
 	Message = mongoose.model('Message');
+	ProfileImage = mongoose.model('ProfileImage');
 })
 
 // import the validation schemas
@@ -231,6 +232,60 @@ app.post('/register', function(request, response){
 		  	// send the new user
 		  	response.send(201, profile);
 		});
+	});
+});
+
+
+app.post('/uploadProfileImage/:id', auth, function(request, response){
+
+	var userId = request.params.id;
+
+	console.log('body: ' + JSON.stringify(request.body, undefined, 2));
+	console.log('userId: ' + userId);
+
+	try{
+		request.body.userId = mongoose.Types.ObjectId(userId);
+	} catch(err){
+		response.send(400, 'Parameter "id" is not valid');
+		return;
+	}
+
+	var newImage = new ProfileImage(request.body);
+	newImage.save(function(err){
+		if (err){
+			console.log(err);
+			response.send(500, err);
+			return;
+		}
+
+		response.send(200, newImage);
+	});
+});
+
+
+app.post('/getProfileImage/:id', auth, function(request, response){
+
+	var userId;
+	try{
+		userId = request.params.id;
+	} catch(err){
+		response.send(400, 'Parameter "id" is not valid');
+		return;
+	}
+
+	ProfileImage.findOne({'userId': userId}, function(err, image){
+		if (err){
+			console.log(err);
+			response.send(500, err);
+			return;
+		}
+
+		if(!image){
+			response.send(404, 'Image not found.');
+			return;	
+		}
+
+		response.send(200, image.image);
 	});
 });
 
