@@ -474,7 +474,7 @@ app.post('/uploadProfileImage/:id', auth, function(request, response){
 		return;
 	}
 
-	console.log(JSON.stringify(request.files, undefined, 2));
+	console.log('request.files: ' + JSON.stringify(request.files, undefined, 2));
 
 	var tempPath = request.files.file.path;
 	var targetPath = path.resolve('./images/profile/' + body.params.id + '.png');
