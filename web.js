@@ -466,20 +466,20 @@ app.get('/users', auth, function(request, response) {
 
 
 // method to upload a profile image
-app.post('/uploadProfileImage/:id', auth, function(request, response){
+app.post('/uploadProfileImage/:id', function(request, response){
 
-	// first check it is your profile
-	if(request.params.id != request.user.id){
-		response.send(403, 'You can only upload images for your own profile.');
-		return;
-	}
+	// // first check it is your profile
+	// if(request.params.id != request.user.id){
+	// 	response.send(403, 'You can only upload images for your own profile.');
+	// 	return;
+	// }
 
 	console.log('request.files: ' + JSON.stringify(request.files, undefined, 2));
 
-	var tempPath = request.files.file.path;
+	var tempPath = request.files.Filedata.path;
 	var targetPath = path.resolve('./images/profile/' + request.params.id + '.png');
 
-	if (path.extname(request.files.file.name).toLowerCase() === '.png'){
+	if (path.extname(request.files.Filedata.name).toLowerCase() === '.png'){
 		fs.rename(tempPath, targetPath, function(err){
 			if(err){
 				console.log(err);
