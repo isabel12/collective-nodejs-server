@@ -477,6 +477,10 @@ app.post('/uploadProfileImage/:id', auth, function(request, response){
 	var tempPath = request.files.file.path;
 	var targetPath = path.resolve('./images/profile/' + body.params.id + '.png');
 
+	console.log(tempPath);
+	console.log(targetPath);
+	console.log(req.files.file.name);
+	console.log(req.files.file);
 	if (path.extname(req.files.file.name).toLowerCase() === '.png'){
 		fs.rename(tempPath, targetPath, function(err){
 			if(err){
