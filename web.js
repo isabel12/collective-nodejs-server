@@ -237,11 +237,12 @@ app.post('/register', function(request, response){
 
 
 app.post('/uploadProfileImage/:id', auth, function(request, response){
-
 	var userId = request.params.id;
 
-	console.log('body: ' + JSON.stringify(request.body, undefined, 2));
-	console.log('userId: ' + userId);
+	if(userId != request.user._id.toString()){
+		response.send(403, 'You can only upload an image to your own profile.');
+		return;
+	}
 
 	try{
 		request.body.userId = mongoose.Types.ObjectId(userId);
@@ -250,21 +251,36 @@ app.post('/uploadProfileImage/:id', auth, function(request, response){
 		return;
 	}
 
-	var newImage = new ProfileImage(request.body);
-	newImage.save(function(err){
+	ProfileImage.findOne({'userId':userId}, function(err, image){
 		if (err){
 			console.log(err);
 			response.send(500, err);
 			return;
 		}
 
-		response.send(200, newImage);
+		// either create a new one, or save the existing one.
+		if(!image){
+			console.log('No image found');
+			image = new ProfileImage(request.body);
+		} else {
+			image.image = request.body.image;
+			image.hash = request.body.hash;
+		}
+
+		image.save(function(err){
+			if (err){
+				console.log(err);
+				response.send(500, err);
+				return;
+			}
+
+			response.send(200, image);
+		});
 	});
 });
 
 
 app.post('/getProfileImage/:id', auth, function(request, response){
-
 	var userId;
 	try{
 		userId = request.params.id;
@@ -272,6 +288,8 @@ app.post('/getProfileImage/:id', auth, function(request, response){
 		response.send(400, 'Parameter "id" is not valid');
 		return;
 	}
+
+	var hash = request.query.hash;
 
 	ProfileImage.findOne({'userId': userId}, function(err, image){
 		if (err){
@@ -283,6 +301,12 @@ app.post('/getProfileImage/:id', auth, function(request, response){
 		if(!image){
 			response.send(404, 'Image not found.');
 			return;	
+		}
+
+		// return nothing 
+		if(image.hash == hash){
+			response.send(200, {});
+			return;
 		}
 
 		response.send(200, image.image);
