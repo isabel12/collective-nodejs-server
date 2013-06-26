@@ -60,7 +60,7 @@ var app = express();
 //app.use(newAuth);
 app.use(express.logger());
 app.use(express.limit('1mb'));
-app.use(express.bodyParser({uploadDir: '/tempImages'}));  // allows the app to read JSON from body
+app.use(express.bodyParser());  // allows the app to read JSON from body
 
 
 // Makes connection asynchronously.  Mongoose will queue up database
@@ -477,13 +477,9 @@ app.post('/uploadProfileImage/:id', auth, function(request, response){
 	console.log('request.files: ' + JSON.stringify(request.files, undefined, 2));
 
 	var tempPath = request.files.file.path;
-	var targetPath = path.resolve('./images/profile/' + body.params.id + '.png');
+	var targetPath = path.resolve('./images/profile/' + request.params.id + '.png');
 
-	console.log(tempPath);
-	console.log(targetPath);
-	console.log(req.files.file.name);
-	console.log(req.files.file);
-	if (path.extname(req.files.file.name).toLowerCase() === '.png'){
+	if (path.extname(request.files.file.name).toLowerCase() === '.png'){
 		fs.rename(tempPath, targetPath, function(err){
 			if(err){
 				console.log(err);
