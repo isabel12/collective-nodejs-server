@@ -601,7 +601,7 @@ app.post('/getProfileImage/:id', auth, function(request, response){
 });
 
 
-app.get('/getResourceImage/:resourceId', auth, function(request, response){
+app.get('/getResourceImage/:resourceId', function(request, response){
 	var imagePath = './images/resource/' + request.params.resourceId + '.png';
 
 	response.sendfile(path.resolve(imagePath));
