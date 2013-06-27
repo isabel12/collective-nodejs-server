@@ -640,136 +640,6 @@ app.get('/users', auth, function(request, response) {
 });
 
 
-// method to upload a profile image
-app.post('/uploadProfileImage/:id', function(request, response){
-
-	// // first check it is your profile
-	// if(request.params.id != request.user.id){
-	// 	response.send(403, 'You can only upload images for your own profile.');
-	// 	return;
-	// }
-
-	console.log('request.files: ' + JSON.stringify(request.files, undefined, 2));
-
-	var tempPath = request.files.Filedata.path;
-	var targetPath = path.resolve('./images/profile/' + request.params.id + '.png');
-
-	if (path.extname(request.files.Filedata.name).toLowerCase() === '.png'){
-		fs.rename(tempPath, targetPath, function(err){
-			if(err){
-				console.log(err);
-				response.send(500);
-				return;
-			}
-
-			console.log('Image uploaded to ' + targetPath);
-			response.send(204, 'Image uploaded to ' + targetPath);
-		});
-	} 
-
-	else {
-		fs.unlink(tempPath, function(err){
-			if (err){
-				throw err;
-			}
-
-			console.log('Only .png files are allowed!');
-			response.send(400, 'Only .png files are allowed!');
-		});
-	}
-
-
-	// var imagePath = './images/profile/kittens.jpg';
-	// var targetPath = './images/profile/' + request.params.id + '.jpg';
-
-
-	// fs.readFile(imagePath, function(err, data){
-	// 	if(err){
-	// 		console.log(err);
-	// 		response.send(500);
-	// 		return;
-	// 	}
-
-	// 	fs.writeFile(targetPath, data, function(err){
-
-	// 		if(err){
-	// 			console.log(err);
-	// 			response.send(500);
-	// 			return;
-	// 		}
-
-	// 		console.log('Uploaded image to ' + targetPath);
-	// 		response.send(200, 'Uploaded image to ' + targetPath);
-	// 	});
-	// });
-
-});
-
-
-
-// method to upload a profile image
-app.post('/uploadResourceImage/:id', auth, function(request, response){
-
-	// first check it is your profile
-	if(request.params.id != request.user.id){
-		response.send(403, 'You can only upload images for your own profile.');
-		return;
-	}
-
-	var tempPath = request.files.file.path;
-	var targetPath = path.resolve('./images/profile/' + body.params.id + '.png');
-
-	if (path.extname(req.files.file.name).toLowerCase() === '.png'){
-		fs.rename(tempPath, targetPath, function(err){
-			if(err){
-				console.log(err);
-				response.send(500);
-				return;
-			}
-
-			console.log('Image uploaded to ' + targetPath);
-			response.send(204, 'Image uploaded to ' + targetPath);
-		});
-	} 
-
-	else {
-		fs.unlink(tempPath, function(err){
-			if (err){
-				throw err;
-			}
-
-			console.log('Only .png files are allowed!');
-			response.send(400, 'Only .png files are allowed!');
-		});
-	}
-
-
-	// var imagePath = './images/profile/kittens.jpg';
-	// var targetPath = './images/profile/' + request.params.id + '.jpg';
-
-
-	// fs.readFile(imagePath, function(err, data){
-	// 	if(err){
-	// 		console.log(err);
-	// 		response.send(500);
-	// 		return;
-	// 	}
-
-	// 	fs.writeFile(targetPath, data, function(err){
-
-	// 		if(err){
-	// 			console.log(err);
-	// 			response.send(500);
-	// 			return;
-	// 		}
-
-	// 		console.log('Uploaded image to ' + targetPath);
-	// 		response.send(200, 'Uploaded image to ' + targetPath);
-	// 	});
-	// });
-
-});
-
 
 app.post('/getProfileImage/:id', auth, function(request, response){
 	var imagePath = './images/profile/' + request.params.id + '.png';
@@ -1258,13 +1128,20 @@ app.post('/getTrade/:tradeId', auth, function(request, response){
 	});
 });
 
-
+// message
 // {
 // 	"message": "Hey yeah thats fine.  See you then!"
 // }
 //
+// review
+// {
+//    "score": 5,
+//    "message": "Awesome trade"
+// }
+//
 app.post('/trades/:tradeId/Actions', auth, function(request, response){
-	var action = request.query.action;
+	
+	// check tradeId is valid
 	var tradeId;
 	try{
 		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
@@ -1274,6 +1151,7 @@ app.post('/trades/:tradeId/Actions', auth, function(request, response){
 	}
 	
 	// check the action is valid
+	var action = request.query.action;
 	if(!tradeLogic.isValidAction(action)){
 		response.send(400, 'Action is invalid. It must be contained in: ' + tradeLogic.actions);
 	}
@@ -1326,6 +1204,9 @@ app.post('/trades/:tradeId/Actions', auth, function(request, response){
 			case tradeLogic.actions.MARK_AS_FAILED:
 				markAsFailed(request, response, trade);
 				break;	
+			case tradeLogic.actions.ADD_REVIEW:
+				addReview(request, response, trade);
+				break;
 			default:
 				response.send(500, 'Action is not yet supported.');
 		}
@@ -1484,6 +1365,75 @@ var markAsFailed = function(request, response, trade){
 
 			// transfer points
 			transferPoints(request, response, trade, tradeLogic.states.FAILED);
+		});
+	});
+}
+
+var addReview = function(request, response, trade){
+	// validate data
+	if (request.body.score < 0 || request.body.score > 5){
+		response.send(400, 'Score must be between 0 and 5');
+		return;  
+	}
+
+	// get ids
+	var reviewerId = request.user._id;
+	var isOwner = trade.isOwner(reviewerId);
+
+
+	var revieweeId;
+	if(isOwner){
+		revieweeId = trade.borrower.userId;
+	} else {
+		revieweeId = trade.owner.userId;
+	}
+
+	// make and save the review
+	User.findById(revieweeId, function(err, reviewee) {
+		if(err){
+			console.log(err);
+			response.send(500);
+			return;
+		}	
+	
+		// make the review
+		var review = new Review(request.body);
+		review.date = new Date();
+		review.reviewer = {'firstName':request.user.firstName, 'lastName': request.user.lastName, 'userId': request.user._id };	
+		review.tradeId = trade._id;
+		review.save(function(err){
+			if(err){
+				console.log(err);
+				response.send(500);
+				return;
+			}
+
+			// add the review to user
+			reviewee.reviews.push(review);
+			reviewee.save(function(err){
+				if(err){
+					console.log(err);
+					response.send(500);
+					return;
+				}	
+
+				// mark trade as reviewed
+				if(isOwner){
+					trade.ownerReviewed = true;
+				} else {
+					trade.borrowerReviewed = true;
+				}
+				trade.save(function(err){
+					if(err){
+						console.log(err);
+						response.send(500);
+						return;
+					}	
+
+					// send the response
+					response.send(204);			
+				});			
+			});
 		});
 	});
 }
