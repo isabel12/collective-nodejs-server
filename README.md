@@ -585,7 +585,7 @@ Otherwise it will return an empty object.
 	
 ####Response
 ######If not up to date:
-	200 + <image string>
+	200 + {"image": <image string>}
 	
 ######If up to date:
 	200 + {}
@@ -629,7 +629,7 @@ Otherwise it will return an empty object.
 	
 ####Response
 ######If not up to date:
-	200 + <image string>
+	200 + {"image": <image string>}
 	
 ######If up to date:
 	200 + {}
