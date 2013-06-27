@@ -1,6 +1,11 @@
 Collective Documentation
 ========================
+This is the documentation for the Collective server API.  
 
+It was orignally designed with CRUD style endpoints, but unfortunately due to problems with flashbuilder, we had to change all methods requiring authenticatoin to POST :(
+
+
+### Good things to note:
 Collective uses Basic Authentication - make sure you include the Authorization 
 header based on the email and password to access all links (excluding registration).
 
