@@ -736,12 +736,12 @@ app.post('/getResourceLocations', auth, function(request, response){
 
 	// add location to the query
 	var query = { 
-					// location: { $near: 
-					// 	{ $geometry: 
-					// 		{  type : "Point" , 
-					// 		   coordinates: [lon, lat] } },
-					// 	$maxDistance : radius
-					// }
+					location: { $near: 
+						{ $geometry: 
+							{  type : "Point" , 
+							   coordinates: [lon, lat] } },
+						$maxDistance : radius
+					}
 				};
 
 	// add filters to query
