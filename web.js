@@ -880,7 +880,7 @@ app.post('/getResource/:id', auth, function(request, response){
 	}
 
 	// find the resource
-	Resource.find({'_id': resourceId}, function(err, resources){
+	Resource.findById(resourceId, function(err, resources){
 		if(err){
 			console.log(err);
 			response.send(500);
