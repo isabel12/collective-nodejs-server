@@ -6,7 +6,6 @@ var path = require("path");
 var models = require('./models');
 var tradeLogic = require('./tradeLogic');
 var jsonValidation = require('./jsonValidation');
-var im = require('imagemagick');
 var User, Review, Resource, Trade, Message, ProfileUpdate, ProfileImage, ResourceImage;  // mongoose schemas
 var UpdateProfileSchema, RegisterProfileSchema, FilterResourceSchema, AddResourceSchema, UpdateResourceSchema, validateJSON;// validation schemas
 
@@ -880,19 +879,15 @@ app.post('/getResource/:id', auth, function(request, response){
 	}
 
 	// find the resource
-	Resource.findById(resourceId, function(err, resources){
+	Resource.findById(resourceId, function(err, resource){
 		if(err){
 			console.log(err);
 			response.send(500);
 			return;
 		}
 
-		var results = new Array();
-		for (var i = 0; i < resources.length; i++) {
-			results[i] = resources[i].returnType;
-		};
 
-		response.send(JSON.stringify(results, undefined, 2));
+		response.send(JSON.stringify(resource, undefined, 2));
 	});
 });
 
