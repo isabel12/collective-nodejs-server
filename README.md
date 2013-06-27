@@ -1,35 +1,37 @@
 Collective Documentation
 ========================
+This is the documentation for the Collective server API.  
 
+It was orignally designed with CRUD style endpoints, but unfortunately due to problems with flashbuilder, we had to change all methods requiring authentication to POST :(
+
+
+### Good things to note:
 Collective uses Basic Authentication - make sure you include the Authorization 
 header based on the email and password to access all links (excluding registration).
 
-Also, for POST and PUT, make sure to include the 'Content-Type: application/json' header.
+Make sure to include the 'Content-Type: application/json' header.
 
 ## API Methods Currently Implemented
 
 	GET			'/'														(links to this page)
-	POST*		'/authenticate'											(Authenticates login, returning profile)
 	POST 		'/register' 											(Register)
+	POST*		'/authenticate'											(Authenticates login, returning profile)
 	POST*		'/getProfile/{userId}' 									(Gets a users profile)
 	POST*		'/updateProfile/{userId}' 								(Updates the profile)
 	POST*		'/uploadProfileImage/{userId}'							(Uploads a profile image)
 	POST*		'/getProfileImage/{userId}'								(Gets the profile image)
-	POST* 		'/users/{userId}/trades/{tradeId}/reviews' 				(Adds a review)
-	POST* 		'/users/{userId}/addResource'  							(Adds a resource)
-	POST* 		'/users/{userId}/getResources'  						(Gets all the users listed resources)
+	POST* 		'/addResource'  										(Adds a resource)
+	POST* 		'/getUsersResources/{userId}'  							(Gets all the users listed resources)
 	POST* 		'/getResourceLocations'  								(Searches and filters all resource locations)
 	POST* 		'/getResource/{resourceId}'  							(Returns the given resource)
 	POST* 		'/updateResource/{resourceId}'  						(Updates the given resource)
 	POST*		'/deleteResource/{resourceId}'  						(Deletes the given resource)
 	POST*		'/uploadResourceImage/{resourceId}'						(Uploads a resource image)
 	POST*		'/getResourceImage/{resourceId}'						(Gets the resource image)
-	POST*		'/addTrade'												(Requests a new trade)
+	POST*		'/requestNewTrade/{resourceId}'							(Requests a new trade)
 	POST*		'/getTrade/{tradeId}'									(Gets the trade)
-	POST*		'/users/{userId}/getTrades'								(Gets all the user's trades)
-	POST*		'/users/{userId}/getTrades?date=2013-06-25T07:34:31.555Z'(Gets all the users trades that have been updated since the given time)	
-	POST*		'/getTrade/{tradeId}?currVer=2'							(Gets the trade if there is a newer version)
-	POST*		'/trades/{tradeId}/Actions								(Method to perform all actions on a trade)
+	POST*		'/getUsersTrades/{userId}'								(Gets all the user's trades)
+	POST*		'/performTradeAction/{tradeId}'							(Method to perform all actions on a trade)
 					- add_message
 					- accept
 					- decline
@@ -38,8 +40,8 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 					- agree
 					- disagree
 					- mark_as_failed
+					- add_review
 					
-	
 	* requires 'Authorization' headers
 
 ## API Method Details
@@ -48,7 +50,8 @@ Also, for POST and PUT, make sure to include the 'Content-Type: application/json
 This method allows you to authenticate the email/password combination, and returns the user associated with it.
 
 ####Request
-	GET '/authenticate'
+	POST '/authenticate'
+	{}
 
 ####Result
 	{
@@ -124,11 +127,12 @@ This method allows you to authenticate the email/password combination, and retur
 
 ###View Profile
 ####Request
-	GET '/user/{id}'
+	POST '/getProfile/{id}'
+	{}
 	
 ####Response
 	{
-	  "id": "51c8d615e5ecced017000002",
+	  "_id": "51c8d615e5ecced017000002",
 	  "email": "isabel.broomenicholson@gmail.com",
 	  "firstName": "Isabel",
 	  "lastName": "Broome-nicholson",
@@ -174,7 +178,7 @@ Fields allowed to be changed are:
 * password
 
 ####Request
-	PUT '/user/{id}'
+	POST '/updateProfile/{id}'
 	{
 	 "firstName": "Isabel",
 		"lastName":"Broome-Nicholson",
@@ -218,28 +222,10 @@ Fields allowed to be changed are:
 * 404 - if the user doesn't exist
 * 500 - if internal server error.
 
-
-###Add a review
-Adds a review from you to the user with the given {userId}, regarding the trade {tradeId}.  
-If the trade is still in progress, or you have already reviewed, you will not be able to add one.
-
-####Request
-	POST '/users/{userId}/trades/{tradeId}/reviews'
-	{
-		"score": 5,
-		"message": "Awesome trade"
-	}
-
-####Response
-* 204 - if successful
-* 400 - if the input is not valid
-* 403 - if you are not allowed to add a review to the given trade
-* 500 - if there is a server error
-
 ### List a Resource
 
 ####Request
-	POST '/users/{userId}/resources'
+	POST '/addResource'
 	{
 		"type": "tools",
 		"location":{
@@ -286,7 +272,8 @@ If the trade is still in progress, or you have already reviewed, you will not be
 
 ####Request
 
-	GET '/resourceLocations'
+	POST '/resourceLocations'
+	{}
 	
 	eg:
 	 	/resourceLocations?lat=-41.315011&lon=174.778131&radius=800
@@ -298,16 +285,13 @@ If the trade is still in progress, or you have already reviewed, you will not be
 * Compulsary.
 * Latitude value.  
 
-
 ######'lon'
 * Compulsary.
 * Longitude value. 
 
-
 ######'radius'
 * Compulsary.
 * The radius of the search area in metres from the given location.  
-
 
 ######'filter'
 * Not compulsary.
@@ -342,14 +326,18 @@ If the trade is still in progress, or you have already reviewed, you will not be
 
 ###Get all a users Resources
 ####Request
-	GET '/users/{userId}/resources'
+	POST '/getUsersResources/{userId}'
+	{}
+	
 ####Response
 * 200 OK + list of resources
 * 500 - internal server error 
 
 ###Get a Resource
 ####Request
-	GET '/resources/{resourceId}'
+	POST '/getResource/{resourceId}'
+	{}
+	
 ####Response
 	{
 	  "type": "tools",
@@ -365,9 +353,11 @@ If the trade is still in progress, or you have already reviewed, you will not be
 
 ###Update a Resource
 ####Request
-{
-	"title": "Red Axe"
-}
+
+	POST '/updateResource/{resourceId}'
+	{
+		"title": "Red Axe"
+	}
 * Note: fields allowed to be changed are 'location', 'type', 'title', 'description', 'points'
 
 ####Response
@@ -390,25 +380,24 @@ If the trade is still in progress, or you have already reviewed, you will not be
 
 ###Delete a Resource
 ####Request
-	DELETE '/resources/{resourceId}'
+	POST '/deleteResource/{resourceId}'
+	{}
+	
 ####Response
 * 204 - success no content
 * 403 - not your resource
 * 404 - couldn't find the resource
 * 500 - server error
 
-
 ###Request a Trade
 ####Request
-	POST '/addTrade'
-	{
-		"resourceId": "51c536476f2b4a7016000005"
-	}
+	POST '/requestNewTrade/{resourceId}'
+	{}
 	
 ####Response
 	{
 	  "resourceId": "51c67561f23f86ac12000002",
-	  "id": "51c6d48b27b136c819000002",
+	  "_id": "51c6d48b27b136c819000002",
 	  "borrower": {
 	    "userId": "51c535916f2b4a7016000002",
 	    "lastName": "Broome-nicholson",
@@ -429,7 +418,7 @@ If the trade is still in progress, or you have already reviewed, you will not be
 	
 ###Add a message
 ####Request
-	POST '/trades/{tradeId}/Actions?action=add_message'
+	POST '/performTradeAction/{tradeId}?action=add_message'
 	{
 		"message": "Hey yeah thats fine.  See you then!"
 	}
@@ -448,26 +437,40 @@ If the trade is still in progress, or you have already reviewed, you will not be
 	
 * 403 - if not allowed to do that action.
 	
-###Perform any other action on a trade
+### Add a review
 ####Request
-	
-	POST '/trades/{tradeId}/Actions?action=accept'
-	
-	POST '/trades/{tradeId}/Actions?action=decline'
-	
-	POST '/trades/{tradeId}/Actions?action=cancel'
-	
-	POST '/trades/{tradeId}/Actions?action=mark_as_complete'
-	
-	POST '/trades/{tradeId}/Actions?action=agree'
-	
-	POST '/trades/{tradeId}/Actions?action=disagree'
 
-	POST '/trades/{tradeId}/Actions?action=mark_as_failed'
+	POST '/performTradeAction/{tradeId}?action=add_review'
+	{
+		"score": 5,
+		"message": "Awesome trade"
+	}
 
 ####Response
 
-* 200 - Currently returns the trade with all messages (need to change this)	
+* 204 no content if success
+* 403 if not allowed to do that action
+
+###Perform any other action on a trade
+####Request
+	
+	POST '/performTradeAction?action=accept'
+	
+	POST '/performTradeAction?action=decline'
+	
+	POST '/performTradeAction?action=cancel'
+	
+	POST '/performTradeAction?action=mark_as_complete'
+	
+	POST '/performTradeAction?action=agree'
+	
+	POST '/performTradeAction?action=disagree'
+
+	POST '/performTradeAction?action=mark_as_failed'
+
+####Response
+
+* 200 + trade if success
 * 403 - if not allowed to do that action.
 
 
@@ -539,16 +542,15 @@ This method takes an optional parameter 'currVer', which is a positive integer. 
 ### Get a user's Trades
 ####Request
 
-	POST '/users/:userId/getTrades'
+	POST '/getUsersTrades/{userId}'
 	
-	POST '/users/:userId/getTrades?date=2013-06-25T07:34:31.555Z'
+	POST '/getUsersTrades/{userId}?date=2013-06-25T07:34:31.555Z
 
 ####Response
 
 * 200 with list of trades
 * 403 if not your account
 * 400 if date string isn't valid
-* 
 
 ### Upload a Profile image
 This method allows the upload of an image as a base64 string.  The request must be within 200kb, or it will be rejected.
@@ -583,7 +585,7 @@ Otherwise it will return an empty object.
 	
 ####Response
 ######If not up to date:
-	200 + <image string>
+	200 + {"image": <image string>}
 	
 ######If up to date:
 	200 + {}
@@ -627,7 +629,7 @@ Otherwise it will return an empty object.
 	
 ####Response
 ######If not up to date:
-	200 + <image string>
+	200 + {"image": <image string>}
 	
 ######If up to date:
 	200 + {}
