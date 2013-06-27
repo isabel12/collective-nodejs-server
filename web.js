@@ -99,6 +99,14 @@ app.post('/authenticate', auth, function(request, response){
 });
 
 
+app.post('/test403', auth, function(request, response){
+	response.send(403, 'message!');
+});
+
+app.post('/test404', auth, function(request, response){
+	response.send(404, 'message!');
+});
+
 // POST '/users'
 // {
 // 	"email":"isabel.broomenicholson@gmail.com",
