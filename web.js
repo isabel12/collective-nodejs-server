@@ -19,41 +19,6 @@ process.env.MONGOHQ_URL ||
 // the appropriate port, or default to 5000  
 var port = process.env.PORT || 5000;
 
-
-
-// var newAuth = function(request, response, next){
-
-// 	var email = request.query.email;
-// 	var pass = request.query.pass;
-
-// 	console.log(email + pass);
-
-// 	User.findOne({'email':email}, function(err, user){
-// 		if(err){
-// 			response.send(500, err.message);
-// 			return;
-// 		}
-
-// 		if (!user){
-// 			response.send(401, 'No user exists.');
-// 			return;
-// 		} 
-				
-// 		var authenticated =  user.authenticate(pass);
-// 		if (!authenticated){
-// 			response.send(401, 'No user exists.');
-// 			return;
-// 		}
-
-// 		// yay authenticated
-// 		request.user = user;
-// 		next();	
-// 	}); 
-// }
-
-
-
-
 // set up the server
 var app = express();
 //app.use(newAuth);
@@ -113,30 +78,6 @@ var auth = express.basicAuth(function(user, pass, callback) {
 	}); 
 });
 
-// admin authentication for test methods
-var adminAuth = express.basicAuth(function(user, pass, callback) {
-
-	if(user != 'isabel.broomenicholson@gmail.com'){
-		callback(new Error('Not authorized.'), null);
-		return;
-	}
-
-	User.findOne({'email':user}, function(err, user){
-		if (!err){
-			if (!user){
-				console.log('No user exists');
-				err = new Error('No user exists');
-			} else {
-				var authenticated =  user.authenticate(pass);
-
-				if (!authenticated){
-					err = new Error('Username and password do not match');
-				}
-			}
-		}
-		callback(err, user);		
-	}); 
-});
 
 
 // The API end points
@@ -525,105 +466,6 @@ app.post('/updateProfile/:id', auth, function(request, response){
 });
 
 
-// {
-//    "score": 5,
-//    "message": "Awesome trade"
-// }
-// POST '/users/{userId}/trades/{tradeId}/reviews'
-app.post('/users/:userId/trades/:tradeId/reviews', auth, function(request, response){
-
-	// validate data
-	if (request.body.score < 0 || request.body.score > 5){
-		response.send(400, 'Score must be between 0 and 5');
-		return;  
-	}
-
-	// get ids
-	var reviewerId = request.user._id;
-	var revieweeId;
-	var tradeId;
-	try{
-		revieweeId = mongoose.Types.ObjectId(request.params.userId);
-	} catch(err){
-		response.send(400, 'Invalid id. That user could not be found.');
-		return;
-	}
-	try{
-		tradeId = mongoose.Types.ObjectId(request.params.tradeId);
-	} catch(err){
-		response.send(400, 'Invalid id. That trade could not be found.');
-		return;
-	}
-
-
-	// get the trade
-	Trade.findById(tradeId, function(err, trade){
-		if(err){
-			console.log(err);
-			response.send(500);
-			return;
-		}
-
-		// check the review is legal (ie. they both belong to the trade, and they haven't reviewed it yet)
-		if (!trade.canDoAction(reviewerId, tradeLogic.actions.ADD_REVIEW)){
-			response.send(403, 'You are not authorized to perform that action.');
-			return;
-		}
-
-		var isOwner = trade.isOwner(reviewerId);
-
-		// make and save the review
-		User.findById(revieweeId, function(err, reviewee) {
-			if(err){
-				console.log(err);
-				response.send(500);
-				return;
-			}	
-		
-			// make the review
-			var review = new Review(request.body);
-			review.date = new Date();
-			review.reviewer = {'firstName':request.user.firstName, 'lastName': request.user.lastName, 'userId': request.user._id };	
-			review.tradeId = tradeId;
-			review.save(function(err){
-				if(err){
-					console.log(err);
-					response.send(500);
-					return;
-				}
-
-				// add the review
-				reviewee.reviews.push(review);
-				reviewee.save(function(err){
-					if(err){
-						console.log(err);
-						response.send(500);
-						return;
-					}	
-
-					// mark trade as reviewed
-					if(isOwner){
-						trade.ownerReviewed = true;
-					} else {
-						trade.borrowerReviewed = true;
-					}
-					trade.save(function(err){
-						if(err){
-							console.log(err);
-							response.send(500);
-							return;
-						}	
-
-						// send the response
-						response.send(204);			
-					});			
-				});
-			});
-		});
-	});
-});
-
-
 // GET '/users'
 // Returns all users.  Test method
 app.get('/users', auth, function(request, response) {
@@ -640,23 +482,6 @@ app.get('/users', auth, function(request, response) {
 });
 
 
-
-app.post('/getProfileImage/:id', auth, function(request, response){
-	var imagePath = './images/profile/' + request.params.id + '.png';
-
-	response.sendfile(path.resolve(imagePath));
-});
-
-
-app.get('/getResourceImage/:resourceId', function(request, response){
-	var imagePath = './images/resource/' + request.params.resourceId + '.png';
-
-	response.sendfile(path.resolve(imagePath));
-});
-
-
-
-
 // {
 //   "type": "tools",
 //   "title": "Axe",
@@ -667,13 +492,7 @@ app.get('/getResourceImage/:resourceId', function(request, response){
 //   },
 // 	 "points":2
 // }
-app.post('/users/:id/addResource', auth, function(request, response){
-
-	// make sure the user is editing their own resource
-	if(request.user._id != request.params.id){
-		response.send(403, 'You can only add resources to your own account.');
-		return;
-	}
+app.post('/addResource', auth, function(request, response){
 
 	// tidy up input
 	request.body.type = request.body.type.toLowerCase();
@@ -711,7 +530,7 @@ app.post('/users/:id/addResource', auth, function(request, response){
 
 
 // Gets all the user's resources
-app.post('/users/:userId/getResources', auth, function(request, response){
+app.post('/getUsersResources/:userId', auth, function(request, response){
 	var userId;
 	try{
 		userId = mongoose.Types.ObjectId(request.params.userId);
@@ -953,24 +772,14 @@ app.post('/getResourceLocations', auth, function(request, response){
 });
 
 
-// {
-// 	  "resourceId": "51c8d791336bb31414000003"
-// }
-app.post('/addTrade', auth, function(request, response){
 
-	var resourceId = request.body.resourceId;
+app.post('/requestNewTrade/:resourceId', auth, function(request, response){
+
+	var resourceId = request.params.resourceId.trim();
 	var me = request.user;
 
-	// validate input
-	try{
-		mongoose.Types.ObjectId(resourceId);
-	} catch(e){
-		response.send(400, 'Invalid resourceId.');
-		return;
-	}
-
 	// get resource
-	Resource.findById(request.body.resourceId)
+	Resource.findById(resourceId)
 	.populate('owner', 'firstName lastName')
 	.exec(function(err, resource){
 		if(err){
@@ -1006,8 +815,8 @@ app.post('/addTrade', auth, function(request, response){
 				return;
 			}
 
-			if(existingTrade){
-				response.send(403, 'You are already borrowing that resource: ' + JSON.stringify(existingTrade));
+			if(existingTrade && existingTrade.state != tradeLogic.states.COMPLETE && existingTrade.state != tradeLogic.states.FAILED && existingTrade.state != tradeLogic.states.CANCELLED){
+				response.send(403, 'You are already borrowing that resource.');
 				return;
 			}
 
