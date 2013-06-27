@@ -1,0 +1,70 @@
+
+{
+    "id": "51c96d197e7b5d0200000002",
+    "email": "phil.brown@gmail.com",
+    "firstName": "Phil",
+    "lastName": "Brown",
+    "address": "45 Rintoul Street, Newtown",
+    "city": "Wellington",
+    "postcode": "6021",
+    "lookingFor": "I'd be quite keen for some nice vege seeds if anyone has any?",
+    "rating": 0,
+    "points": 0,
+    "numItemsLent": 0,
+    "numItemsBorrowed": 0,
+    "blackMarks": 0,
+    "reviews": []
+}
+
+
+{
+    "id": "51c96dd97e7b5d0200000003",
+    "email": "ben.stuart@gmail.com",
+    "firstName": "Ben",
+    "lastName": "Stuart",
+    "address": "12 Kenwyn Tce, Newtown",
+    "city": "Wellington",
+    "postcode": "6021",
+    "lookingFor": "I would quite like some compost.  We've started one, but it won't be ready for a while.",
+    "rating": 0,
+    "points": 0,
+    "numItemsLent": 0,
+    "numItemsBorrowed": 0,
+    "blackMarks": 0,
+    "reviews": []
+}
+
+{
+    "id": "51c96e957e7b5d0200000004",
+    "email": "jenny.phillips@gmail.com",
+    "firstName": "Jenny",
+    "lastName": "Phillips",
+    "address": "180 Riddiford Street, Newtown",
+    "city": "Wellington",
+    "postcode": "6021",
+    "lookingFor": "I don't really have a garden, but I would really like to grow tomatos.  If anyone nearby has some land nearby that I could plant some in, that would be awesome!",
+    "rating": 0,
+    "points": 0,
+    "numItemsLent": 0,
+    "numItemsBorrowed": 0,
+    "blackMarks": 0,
+    "reviews": []
+}
+
+
+
+
+// items
+//============================================================
+{
+  "type": "tools",
+  "id": "51c96fb77e7b5d0200000005",
+  "title": "Spade",
+  "description": "Pretty normal really - not super strong, but should be good for digging soil.",
+  "owner": "51c96dd97e7b5d0200000003",
+  "location": {
+    "lat": -41.313468,
+    "lon": 174.778038
+  },
+  "points": 1
+}

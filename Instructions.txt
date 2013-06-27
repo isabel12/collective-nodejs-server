@@ -1,0 +1,27 @@
+README - Instructions
+---------------------
+
+Server
+-------
+
+The server is on GitHub at https://github.com/isabel12/collective-nodejs-server
+The readme has a very detailed API description.
+
+The server is running on Heroku at:
+https://nodejs-collective-server.herokuapp.com/
+
+To run the server on LocalHost:
+
+1. You need to have installed and be running MongoDB, listening on localhost:50791.  
+2. You need to install node (should be easy, http://nodejs.org/)
+3. The server '.zipp' extension needs to be renamed to 'zip', and extracted. It should contain all modules already.
+4. type the following command: 
+	$ node web.js
+
+
+Client
+------
+
+The Client is on GitHub at https://github.com/ehinger/collective-client
+
+The design guys have a different deadline for this (tomorrow), so will submit this late as they haven't uploaded yet..

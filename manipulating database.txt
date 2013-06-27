@@ -1,0 +1,87 @@
+db.trades.save(
+	{
+	    "resource": ObjectId("51c8d791336bb31414000003"),
+	    "_id": ObjectId("51c668d61e5272a40b000002"),
+	    "borrower": {
+	      "userId": ObjectId("51c8d615e5ecced017000002"),
+	      "lastName": "Broome-nicholson",
+	      "firstName": "Isabel"
+	    },
+	   	"owner": {
+	      "userId": ObjectId("51c8d640e5ecced017000003"),
+	      "lastName": "Pip",
+	      "firstName": "Jenny"
+	    },
+	    "state": "complete",
+	    "messages": []
+  	}
+)
+
+
+
+db.users.insert(
+  {
+    "blackMarks": 0,
+    "numItemsBorrowed": 0,
+    "numItemsLent": 0,
+    "points": 0,
+    "email": "jenny@gmail.com",
+    "hashed_password": "e7271cca1eb2b78b36f1bdf365706053a3bbea83",
+    "salt": "702681742872",
+    "firstName": "Jenny",
+    "lastName": "Pip",
+    "location": {
+      "lat": 13.4,
+      "lon": 123.3
+    },
+    "address": "Cool place on the hill",
+    "city": "Wellington",
+    "postcode": "6021",
+    "_id": ObjectId("51c8d640e5ecced017000003"),
+    "reviews": []
+  }
+)
+
+db.users.insert(
+  {
+    "blackMarks": 0,
+    "numItemsBorrowed": 0,
+    "numItemsLent": 0,
+    "points": -22,
+    "email": "isabel.broomenicholson@gmail.com",
+    "hashed_password": "7fb60363a272bb757bb635af34978f80de63d55b",
+    "salt": "356162225473",
+    "firstName": "Isabel",
+    "lastName": "Broome-nicholson",
+    "location": {
+      "lat": 13.4,
+      "lon": 123.3
+    },
+    "address": "Cool place on the hill",
+    "city": "Wellington",
+    "postcode": "6021",
+    "_id": ObjectId("51c8d615e5ecced017000002"),
+    "reviews": []
+  }
+)
+
+
+
+db.resources.insert(
+	{
+	  "type": "tools",
+	  "_id": ObjectId("51c8d791336bb31414000003"),
+	  "title": "Axe",
+	  "description": "Red",
+	  "owner": ObjectId("51c8d640e5ecced017000003"),
+	  "location": {
+	    "lat": -41.311736,
+	    "lon": 174.776634
+	  },
+	  "points": 2
+	}
+)
+
+
+
+http://ruben.verborgh.org/blog/2012/12/31/asynchronous-error-handling-in-javascript/
