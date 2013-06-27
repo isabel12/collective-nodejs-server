@@ -308,7 +308,7 @@ app.post('/getProfileImage/:id', auth, function(request, response){
 			return;
 		}
 
-		response.send(200, image.image);
+		response.send(200, {'image': image.image});
 	});
 });
 
@@ -403,7 +403,7 @@ app.post('/getResourceImage/:id', auth, function(request, response){
 			return;
 		}
 
-		response.send(200, image.image);
+		response.send(200, {'image': image.image});
 	});
 });
 
