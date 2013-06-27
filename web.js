@@ -1036,7 +1036,7 @@ app.post('/addTrade', auth, function(request, response){
 });
 
 
-app.post('/users/:userId/getTrades', auth, function(request, response){
+app.post('/getUsersTrades/:userId', auth, function(request, response){
 	// check they are your trades
 	var userId = request.user._id;
 	if(request.params.userId != userId.toString()){
@@ -1139,7 +1139,7 @@ app.post('/getTrade/:tradeId', auth, function(request, response){
 //    "message": "Awesome trade"
 // }
 //
-app.post('/trades/:tradeId/Actions', auth, function(request, response){
+app.post('/performTradeAction/:tradeId', auth, function(request, response){
 	
 	// check tradeId is valid
 	var tradeId;
